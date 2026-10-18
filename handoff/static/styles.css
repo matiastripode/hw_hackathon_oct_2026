@@ -107,7 +107,6 @@ main > section { margin-bottom: 2rem; }
   background: radial-gradient(circle at 7% 7%, #fdf8e9 0, transparent 28rem),
     repeating-linear-gradient(110deg, transparent 0 62px, #dfdfd248 63px, transparent 64px),
     var(--paper);
-  font: 15px/1.55 "Trebuchet MS", Verdana, sans-serif;
 }
 .landing button, .landing input, .landing select { font: inherit; }
 .landing-wrap { width: min(1280px, calc(100% - 64px)); margin-inline: auto; }
@@ -130,7 +129,7 @@ main > section { margin-bottom: 2rem; }
 }
 .landing-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .19em; color: var(--sea); }
 .landing-intro h1, .landing .login-card h2 {
-  font-family: Georgia, "Times New Roman", serif; font-weight: 400; letter-spacing: -.035em;
+  font-weight: 400; letter-spacing: -.035em;
 }
 .landing-intro h1 { font-size: clamp(47px, 5.3vw, 82px); line-height: 1.04; margin: 27px 0 26px; }
 .landing-intro h1 i { color: var(--sea); font-weight: 400; }
