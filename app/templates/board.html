@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}James's care board{% endblock %}
+{% block content %}
+<main class="shell board-layout">
+  <section class="patient-hero" aria-labelledby="patient-title">
+    <div>
+      <span class="eyebrow">FAMILY CARE / ONE SHARED PICTURE</span>
+      <h1 id="patient-title">James's <i>care board.</i></h1>
+      <p>Fictional patient, age 72 <span aria-hidden="true">/</span> Shared updates for the next caregiver</p>
+    </div>
+    <div class="hero-side">
+      <span class="live-dot" aria-hidden="true"></span>
+      <span id="connection-status" role="status">Keeping this board in sync</span>
+    </div>
+  </section>
+  <nav class="board-shortcuts" aria-label="Shift actions">
+    <a href="#add-title">Record a detail <span aria-hidden="true">+</span></a>
+    <a href="#shift-title">Leave a handoff <span aria-hidden="true">&rarr;</span></a>
+  </nav>
+  <div id="board-updates" class="update-notice" role="status" aria-live="polite" hidden>
+    <span>New updates are available. Finish editing or apply them now.</span>
+    <button id="apply-board-updates" class="button button-dark" type="button">Apply updates <span aria-hidden="true">&rarr;</span></button>
+  </div>
+  <div id="board-content" data-board-content>
+    {% include "board_content.html" %}
+  </div>
+</main>
+{% endblock %}

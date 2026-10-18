@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1c4745">
+  <title>{% block title %}Care board{% endblock %} | Shift Notes</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+  <script src="{{ url_for('static', path='/board.js') }}" defer></script>
+</head>
+<body>
+  <div class="disclaimer">Prototype only <span aria-hidden="true">/</span> Fictional data <span aria-hidden="true">/</span> Not medical advice</div>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="/" aria-label="Shift Notes home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>SHIFT <em>NOTES</em></span>
+      </a>
+      {% if caregiver %}
+      <div class="header-actions">
+        <span class="signed-in">On shift as <strong>{{ caregiver }}</strong></span>
+        <form action="/logout" method="post"><button type="submit" class="text-button">Switch caregiver <span aria-hidden="true">&rarr;</span></button></form>
+      </div>
+      {% else %}
+      <span class="header-caption">THE OFFLINE CARE BOARD</span>
+      {% endif %}
+    </div>
+  </header>
+  {% block content %}{% endblock %}
+  <footer class="site-footer shell">
+    <span>Shift Notes / James's care board</span>
+    <span>Private, local-first demo. Never enter real patient information.</span>
+  </footer>
+</body>
+</html>

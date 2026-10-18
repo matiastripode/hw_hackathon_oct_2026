@@ -1,0 +1,42 @@
+<article class="entry-card severity-{{ entry.severity }}">
+  <div class="entry-top">
+    <span class="type-label">{{ entry.type }}</span>
+    <span class="severity-label">{{ entry.severity }} priority</span>
+  </div>
+  <h4>{{ entry.title }}</h4>
+  {% if entry.value %}
+  <p class="entry-value">
+    {% if entry.previous_value and entry.previous_value != entry.value %}{{ entry.previous_value }} &rarr; {% endif %}{{ entry.value }}
+  </p>
+  {% endif %}
+  {% if entry.details %}<p class="entry-details">{{ entry.details }}</p>{% endif %}
+  <div class="entry-meta">
+    <span class="status-tag {{ entry.status }}">{{ entry.status }}</span>
+    <span>Updated by {{ entry.author }} <span aria-hidden="true">&middot;</span> <time datetime="{{ entry.updated_at }}" data-local-time>{{ entry.updated_at[:16] | replace('T', ' ') }} UTC</time></span>
+  </div>
+  <details class="edit-panel">
+    <summary>Update item <span aria-hidden="true">&rarr;</span></summary>
+    <form action="/entries/{{ entry.id }}" method="post" class="form-stack edit-form">
+      <label for="value-{{ entry.id }}">Value / observation</label>
+      <input id="value-{{ entry.id }}" name="value" value="{{ entry.value }}" maxlength="100" placeholder="e.g. moderate, taken at 8:00 PM">
+      <label for="details-{{ entry.id }}">Details</label>
+      <textarea id="details-{{ entry.id }}" name="details" maxlength="600" rows="2">{{ entry.details }}</textarea>
+      <div class="form-pair">
+        <div><label for="severity-{{ entry.id }}">Priority</label>
+          <select id="severity-{{ entry.id }}" name="severity">
+            {% for option in ("low", "medium", "high") %}
+            <option value="{{ option }}" {% if entry.severity == option %}selected{% endif %}>{{ option | title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div><label for="status-{{ entry.id }}">Status</label>
+          <select id="status-{{ entry.id }}" name="status">
+            <option value="open" {% if entry.status == "open" %}selected{% endif %}>Open</option>
+            <option value="done" {% if entry.status == "done" %}selected{% endif %}>Done</option>
+          </select>
+        </div>
+      </div>
+      <button class="button button-dark" type="submit">Save update</button>
+    </form>
+  </details>
+</article>

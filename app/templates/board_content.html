@@ -1,0 +1,119 @@
+{% if error %}<p class="alert board-alert" role="alert">{{ error }}</p>{% endif %}
+<div class="board-grid" data-board-revision="{{ state.revision }}">
+  <div class="primary-column">
+    {% set handoff = state.handoff %}
+    {% if handoff %}
+    <section class="handoff-card {% if not handoff.acknowledged_at %}is-pending{% endif %}" aria-labelledby="handoff-title">
+      <div class="handoff-heading">
+        <div>
+          <span class="eyebrow">{% if handoff.acknowledged_at %}LAST HANDOFF{% else %}NEW HANDOFF / READ THIS FIRST{% endif %}</span>
+          <h2 id="handoff-title">From {{ handoff.author }} <span aria-hidden="true">&rarr;</span> the next shift</h2>
+        </div>
+        <span class="handoff-state">{% if handoff.acknowledged_at %}Acknowledged{% else %}Needs acknowledgement{% endif %}</span>
+      </div>
+      <p class="handoff-time">Submitted <time datetime="{{ handoff.submitted_at }}" data-local-time>{{ handoff.submitted_at[:16] | replace('T', ' ') }} UTC</time></p>
+      <div class="handoff-note"><span>FROM {{ handoff.author | upper }}</span><p>{{ handoff.note }}</p></div>
+      <div class="snapshot-grid">
+        <div class="snapshot-section attention-section">
+          <h3><span class="summary-symbol attention-symbol" aria-hidden="true">!</span> Still needs attention <small>{{ handoff.snapshot.attention | length }}</small></h3>
+          {% if handoff.snapshot.attention %}
+          <ul>{% for item in handoff.snapshot.attention %}<li><strong>{{ item.title }}</strong> <span>{{ item.severity }} priority{% if item.value %} / {{ item.value }}{% endif %}</span>{% if item.details %}<span>{{ item.details }}</span>{% endif %}</li>{% endfor %}</ul>
+          {% else %}<p class="empty-small">No open items at submission.</p>{% endif %}
+        </div>
+        <div class="snapshot-section">
+          <h3><span class="summary-symbol changed-symbol" aria-hidden="true">&bull;</span> Changed <small>{{ handoff.snapshot.changed | length }}</small></h3>
+          {% if handoff.snapshot.changed %}
+          <ul>{% for item in handoff.snapshot.changed %}<li><strong>{{ item.title }}</strong>{% if item.from_value and item.value and item.from_value != item.value %} <span>{{ item.from_value }} &rarr; {{ item.value }}</span>{% elif item.value %} <span>{{ item.value }}</span>{% endif %}{% if item.details %}<span>{{ item.details }}</span>{% endif %}</li>{% endfor %}</ul>
+          {% else %}<p class="empty-small">No other changes this shift.</p>{% endif %}
+        </div>
+        <div class="snapshot-section">
+          <h3><span class="summary-symbol completed-symbol" aria-hidden="true">&check;</span> Completed <small>{{ handoff.snapshot.completed | length }}</small></h3>
+          {% if handoff.snapshot.completed %}
+          <ul>{% for item in handoff.snapshot.completed %}<li><strong>{{ item.title }}</strong>{% if item.value %} <span>{{ item.value }}</span>{% endif %}</li>{% endfor %}</ul>
+          {% else %}<p class="empty-small">Nothing completed this shift.</p>{% endif %}
+        </div>
+      </div>
+      {% if handoff.acknowledged_at %}
+      <p class="acknowledged-line">Acknowledged by {{ handoff.acknowledged_by }} <span aria-hidden="true">&middot;</span> <time datetime="{{ handoff.acknowledged_at }}" data-local-time>{{ handoff.acknowledged_at[:16] | replace('T', ' ') }} UTC</time></p>
+      {% elif handoff.author != caregiver %}
+      <form action="/handoffs/{{ handoff.id }}/acknowledge" method="post">
+        <button class="button button-light" type="submit">I've read this handoff <span aria-hidden="true">&check;</span></button>
+      </form>
+      {% else %}
+      <p class="acknowledged-line">Waiting for another caregiver to acknowledge.</p>
+      {% endif %}
+    </section>
+    {% else %}
+    <section class="first-shift">
+      <span class="eyebrow">READY FOR THE FIRST SHIFT</span>
+      <h2>A good handoff starts here.</h2>
+      <p>Update the items below, then leave a note for the next caregiver. Your changes will be collected into a quick-read snapshot.</p>
+    </section>
+    {% endif %}
+
+    <section class="items-section" aria-labelledby="open-title">
+      <div class="section-heading">
+        <div><span class="eyebrow">THE CURRENT PICTURE</span><h2 id="open-title">Needs attention <span class="count">{{ state.open_count }}</span></h2></div>
+        {% if state.concern_count %}<span class="concern-count">{{ state.concern_count }} open concern{% if state.concern_count != 1 %}s{% endif %}</span>{% endif %}
+      </div>
+      {% if state.groups %}
+        {% for group in state.groups %}
+        <div class="entry-group">
+          <h3>{{ group.name }} <span>{{ group["items"] | length }}</span></h3>
+          <div class="entry-list">
+            {% for entry in group["items"] %}{% include "entry_card.html" %}{% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}<div class="empty-board">All clear for now. Add an item when something needs a follow-up.</div>{% endif %}
+    </section>
+
+    {% if state.done %}
+    <section class="done-section" aria-labelledby="done-title">
+      <div class="section-heading"><div><span class="eyebrow">ALREADY TAKEN CARE OF</span><h2 id="done-title">Completed <span class="count">{{ state.done | length }}</span></h2></div></div>
+      <div class="entry-list">{% for entry in state.done %}{% include "entry_card.html" %}{% endfor %}</div>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="side-column" aria-label="Shift actions">
+    <section class="action-card" aria-labelledby="add-title">
+      <span class="eyebrow">01 / RECORD A DETAIL</span>
+      <h2 id="add-title">Something to add?</h2>
+      <p>A medication, a symptom, an appointment, or simply a thing to remember.</p>
+      <form action="/entries" method="post" class="form-stack">
+        <label for="new-type">Type</label>
+        <select id="new-type" name="type" required>
+          <option value="medication">Medication</option><option value="symptom">Symptom</option>
+          <option value="task">Task</option><option value="appointment">Appointment</option>
+          <option value="concern">Concern</option>
+        </select>
+        <label for="new-title">Title</label>
+        <input id="new-title" name="title" maxlength="100" required placeholder="What happened?">
+        <label for="new-value">Value / observation <span class="field-hint">(optional)</span></label>
+        <input id="new-value" name="value" maxlength="100" placeholder="e.g. mild, 8:00 PM">
+        <label for="new-details">Details <span class="field-hint">(optional)</span></label>
+        <textarea id="new-details" name="details" maxlength="600" rows="3" placeholder="A little more context for the next shift"></textarea>
+        <div class="form-pair">
+          <div><label for="new-severity">Priority</label><select id="new-severity" name="severity"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+          <div><label for="new-status">Status</label><select id="new-status" name="status"><option value="open">Open</option><option value="done">Done</option></select></div>
+        </div>
+        <button class="button button-dark" type="submit">Add to board <span aria-hidden="true">+</span></button>
+      </form>
+    </section>
+    <section class="action-card shift-card" aria-labelledby="shift-title">
+      <span class="eyebrow">02 / PASS IT ON</span>
+      <h2 id="shift-title">Leave the next shift a note.</h2>
+      {% if handoff and not handoff.acknowledged_at %}
+      <p>The latest handoff is waiting for another caregiver. Once they acknowledge it, you can submit the next one.</p>
+      {% else %}
+      <p>We'll add a snapshot of everything completed, changed, and still open.</p>
+      <form action="/handoffs" method="post" class="form-stack">
+        <label for="handoff-note">Your handoff note</label>
+        <textarea id="handoff-note" name="note" maxlength="1000" rows="4" required placeholder="What should they know first?"></textarea>
+        <button class="button button-primary" type="submit">Submit handoff <span aria-hidden="true">&rarr;</span></button>
+      </form>
+      {% endif %}
+    </section>
+  </aside>
+</div>

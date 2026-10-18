@@ -28,3 +28,13 @@ out/
 *.log
 tmp/
 temp/
+
+# Local app state
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+data/
+*.db
+*.db-shm
+*.db-wal
