@@ -40,6 +40,12 @@ main > section { margin-bottom: 2rem; }
 .roster-card h3, .roster-card h4 { margin: .4rem 0; font-size: 1.1rem; }
 .roster-card p { margin: .3rem 0 .75rem; color: #52655d; }
 .roster-card a, .back-link { color: #135a50; font-weight: 700; }
+.roster-assignment-form { max-width: 500px; margin-bottom: 1rem; padding: 1.2rem 1.4rem; border: 1px solid #dce7df; border-radius: 12px; background: white; }
+.roster-assignment-form label { display: block; margin: .8rem 0 .35rem; font-weight: 650; }
+.roster-assignment-form label:first-of-type { margin-top: 0; }
+.roster-assignment-form select { width: 100%; padding: .65rem; border: 1px solid #9bafa4; border-radius: 8px; background: white; color: #213631; font: inherit; }
+.roster-assignment-form .primary-button { width: auto; margin-top: 1rem; }
+.roster-assignment-form select:focus-visible { outline: 3px solid #d69b38; outline-offset: 2px; }
 .back-link { display: inline-block; margin-bottom: 1.5rem; }
 .patient-location { margin: .5rem 0; color: #d7ebe5; font-weight: 700; }
 .patient-form { max-width: 500px; }

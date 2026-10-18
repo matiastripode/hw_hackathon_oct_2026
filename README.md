@@ -42,7 +42,8 @@ fictional patient. Leave fields blank to add just one or two: an empty room
 needs only a room label; a new bed needs a new room label or an existing room
 selection; a patient may remain unassigned, take an available bed, or be
 assigned the new bed entered in the same form. A patient can be moved to an
-available bed from their care board; occupied beds cannot be taken without
+available bed using the patient and bed dropdowns above the unassigned roster,
+or from their care board; occupied beds cannot be taken without
 first unassigning the current patient. Care entries stay with the patient
 when their bed changes.
 On a patient board, expand **Log symptom** or **Add task** to record a fictional

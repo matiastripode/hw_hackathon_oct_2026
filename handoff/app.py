@@ -100,7 +100,8 @@ def paginate(items, page):
 
 
 def render_roster(request, error=None, status_code=200, room_error=None, bed_error=None,
-                  room_page=1, patient_page=1, form_values=None):
+                  room_page=1, patient_page=1, form_values=None,
+                  assignment_error=None, assignment_patient_id=None):
     with open_database(database_path()) as connection:
         rooms = []
         for row in connection.execute(
@@ -127,6 +128,7 @@ def render_roster(request, error=None, status_code=200, room_error=None, bed_err
                FROM bed LEFT JOIN patient ON patient.bed_id = bed.id
                ORDER BY bed.room_label, bed.bed_label"""
         ).fetchall()
+        available_beds = [bed for bed in beds if not bed["patient_id"]]
         unassigned = connection.execute(
             "SELECT id, display_name FROM patient WHERE bed_id IS NULL AND active = 1 ORDER BY display_name, id"
         ).fetchall()
@@ -151,9 +153,11 @@ def render_roster(request, error=None, status_code=200, room_error=None, bed_err
             "room_page": room_page,
             "room_pages": room_pages,
             "beds": beds,
+            "available_beds": available_beds,
             "visible_beds": visible_beds,
             "bed_pages": bed_pages,
             "unassigned": visible_patients,
+            "all_unassigned": unassigned,
             "patient_page": patient_page,
             "patient_pages": patient_pages,
             "unassigned_count": len(unassigned),
@@ -161,6 +165,8 @@ def render_roster(request, error=None, status_code=200, room_error=None, bed_err
             "room_error": room_error,
             "bed_error": bed_error,
             "form_values": form_values or {},
+            "assignment_error": assignment_error,
+            "assignment_patient_id": assignment_patient_id,
         },
         status_code=status_code,
     )
@@ -397,6 +403,46 @@ def assign_bed(request: Request, patient_id: int, bed_id: str = Form("")):
     except sqlite3.IntegrityError:
         return render_patient(request, patient_id, "That bed is already occupied.", 409)
     return RedirectResponse(f"/patients/{patient_id}", status_code=303)
+
+
+@app.post("/roster/assign-bed")
+def assign_from_roster(request: Request, patient_id: str = Form(""), bed_id: str = Form(""),
+                       room_page: int = Form(1), patient_page: int = Form(1)):
+    if not request.session.get("caregiver"):
+        return RedirectResponse("/login", status_code=303)
+    room_page, patient_page = max(1, room_page), max(1, patient_page)
+
+    def invalid(message, status=400):
+        return render_roster(
+            request, status_code=status, room_page=room_page, patient_page=patient_page,
+            assignment_error=message, assignment_patient_id=patient_id,
+        )
+
+    try:
+        try:
+            selected_patient = int(patient_id)
+        except ValueError as exc:
+            raise ValueError("Choose an unassigned patient.") from exc
+        if not bed_id:
+            raise ValueError("Choose an available bed.")
+        with open_database(database_path()) as connection:
+            patient = connection.execute(
+                "SELECT bed_id FROM patient WHERE id = ? AND active = 1", (selected_patient,)
+            ).fetchone()
+            if patient is None or patient["bed_id"] is not None:
+                raise ValueError("Choose an unassigned patient.")
+            assigned_bed = selected_bed(connection, bed_id)
+            result = connection.execute(
+                "UPDATE patient SET bed_id = ? WHERE id = ? AND bed_id IS NULL AND active = 1",
+                (assigned_bed, selected_patient),
+            )
+            if result.rowcount != 1:
+                raise ValueError("Choose an unassigned patient.")
+    except ValueError as exc:
+        return invalid(str(exc))
+    except sqlite3.IntegrityError:
+        return invalid("That bed is already occupied.", 409)
+    return RedirectResponse(f"/?room_page={room_page}&patient_page={patient_page}", status_code=303)
 
 
 def valid_entry(title, details, severity, status):

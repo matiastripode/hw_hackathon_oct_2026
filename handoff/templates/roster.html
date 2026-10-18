@@ -73,6 +73,26 @@
     {% if unassigned_count %}
     <section aria-labelledby="unassigned-title">
       <h2 id="unassigned-title">Unassigned patients</h2>
+      <form class="roster-assignment-form" action="/roster/assign-bed" method="post">
+        <input type="hidden" name="room_page" value="{{ room_page }}">
+        <input type="hidden" name="patient_page" value="{{ patient_page }}">
+        {% if assignment_error %}<p class="form-error" role="alert">{{ assignment_error }}</p>{% endif %}
+        <label for="assign-patient">Patient name</label>
+        <select id="assign-patient" name="patient_id" required {% if not available_beds %}disabled{% endif %}>
+          <option value="">Choose an unassigned patient</option>
+          {% for patient in all_unassigned %}
+          <option value="{{ patient['id'] }}" {% if assignment_patient_id == patient['id'] | string %}selected{% endif %}>{{ patient["display_name"] }} · #{{ patient["id"] }}</option>
+          {% endfor %}
+        </select>
+        <label for="assign-bed">Assign to bed</label>
+        <select id="assign-bed" name="bed_id" required {% if not available_beds %}disabled{% endif %}>
+          <option value="">{{ "Choose an available bed" if available_beds else "No beds available" }}</option>
+          {% for bed in available_beds %}
+          <option value="{{ bed['id'] }}">Room {{ bed["room_label"] }} · Bed {{ bed["bed_label"] }}</option>
+          {% endfor %}
+        </select>
+        <button class="primary-button" type="submit" {% if not available_beds %}disabled{% endif %}>Assign bed</button>
+      </form>
       <div class="roster-grid">
         {% for patient in unassigned %}
         <article class="roster-card">
@@ -116,7 +136,7 @@
         <label for="bed-id">Or assign an available bed <span class="optional">(optional)</span></label>
         <select id="bed-id" name="bed_id">
           <option value="">Use new bed above, or leave unassigned</option>
-          {% for bed in beds if not bed["patient_id"] %}
+          {% for bed in available_beds %}
           <option value="{{ bed['id'] }}" {% if form_values.get('bed_id') == bed['id'] | string %}selected{% endif %}>Room {{ bed["room_label"] }} · Bed {{ bed["bed_label"] }}</option>
           {% endfor %}
         </select>

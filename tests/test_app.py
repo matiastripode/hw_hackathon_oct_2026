@@ -146,6 +146,79 @@ class AppTests(unittest.TestCase):
         self.client.post(f"{board_path}/bed", data={"bed_id": ""})
         self.assertIn("Unassigned", self.client.get(board_path).text)
 
+    def test_two_dropdowns_assign_patient_from_roster_without_opening_board(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        self.client.post("/patients", data={"display_name": "Nora"})
+        with open_database(database_path()) as connection:
+            empty_bed = connection.execute("SELECT id FROM bed WHERE room_label = '102'").fetchone()[0]
+        roster = self.client.get("/").text
+        self.assertIn('action="/roster/assign-bed"', roster)
+        self.assertEqual(roster.count('action="/roster/assign-bed"'), 1)
+        self.assertIn('id="assign-patient" name="patient_id"', roster)
+        self.assertIn('<option value="3" >Nora · #3</option>', roster)
+        self.assertIn('id="assign-bed" name="bed_id"', roster)
+        self.assertIn(f'<option value="{empty_bed}">Room 102 · Bed A</option>', roster)
+        self.assertNotIn('id="assign-bed" name="bed_id" required disabled', roster)
+        self.assertNotIn('id="assign-bed-3"', roster)
+        assigned = self.client.post(
+            "/roster/assign-bed",
+            data={"patient_id": "3", "bed_id": str(empty_bed), "room_page": "1", "patient_page": "1"},
+            follow_redirects=False,
+        )
+        self.assertEqual(assigned.status_code, 303)
+        self.assertEqual(assigned.headers["location"], "/?room_page=1&patient_page=1")
+        updated = self.client.get(assigned.headers["location"]).text
+        self.assertIn("<h4>Nora</h4>", updated)
+        self.assertNotIn('action="/roster/assign-bed"', updated)
+        self.assertIn("Room 102 · Bed A", self.client.get("/patients/3").text)
+
+    def test_two_dropdown_assignment_rejects_invalid_choices_and_taken_beds(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        self.client.post("/patients", data={"display_name": "Nora"})
+        for patient_id, bed_id, status, error in (
+            ("", "3", 400, "Choose an unassigned patient."),
+            ("invalid", "3", 400, "Choose an unassigned patient."),
+            ("999", "3", 400, "Choose an unassigned patient."),
+            ("1", "3", 400, "Choose an unassigned patient."),
+            ("3", "", 400, "Choose an available bed."),
+            ("3", "invalid", 400, "Choose an available bed."),
+            ("3", "999", 400, "Choose an available bed."),
+            ("3", "1", 409, "That bed is already occupied."),
+        ):
+            with self.subTest(patient_id=patient_id, bed_id=bed_id):
+                response = self.client.post(
+                    "/roster/assign-bed", data={"patient_id": patient_id, "bed_id": bed_id}
+                )
+                self.assertEqual(response.status_code, status)
+                self.assertIn(error, response.text)
+                self.assertIn('action="/roster/assign-bed"', response.text)
+                self.assertNotIn('<h4>Nora</h4>', response.text)
+
+    def test_two_dropdowns_include_all_patients_and_preserve_roster_pagination(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        with open_database(database_path()) as connection:
+            connection.executemany("INSERT INTO room (label) VALUES (?)", [(str(n),) for n in range(103, 106)])
+            connection.executemany("INSERT INTO patient (display_name) VALUES (?)", [(f"Demo {n}",) for n in range(4)])
+            empty_bed = connection.execute("SELECT id FROM bed WHERE room_label = '102'").fetchone()[0]
+        second_page = self.client.get("/?room_page=2&patient_page=2").text
+        self.assertIn('action="/roster/assign-bed"', second_page)
+        self.assertIn('<option value="3" >Demo 0 · #3</option>', second_page)
+        self.assertIn('<option value="6" >Demo 3 · #6</option>', second_page)
+        self.assertNotIn('<h3>Demo 0</h3>', second_page)
+        self.assertIn('name="room_page" value="2"', second_page)
+        self.assertIn('name="patient_page" value="2"', second_page)
+        assigned = self.client.post(
+            "/roster/assign-bed",
+            data={"patient_id": "6", "bed_id": str(empty_bed), "room_page": "2", "patient_page": "2"},
+            follow_redirects=False,
+        )
+        self.assertEqual(assigned.headers["location"], "/?room_page=2&patient_page=2")
+        self.assertIn("Rooms page 2 of 2", self.client.get(assigned.headers["location"]).text)
+        no_beds = self.client.get("/").text
+        self.assertIn('id="assign-bed" name="bed_id" required disabled', no_beds)
+        self.assertIn('id="assign-patient" name="patient_id" required disabled', no_beds)
+        self.assertIn("No beds available", no_beds)
+
     def test_moving_patient_keeps_their_care_entries(self):
         self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
         with open_database(database_path()) as connection:
@@ -176,6 +249,10 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.client.get("/patients/1", follow_redirects=False).headers["location"], "/login")
         self.assertEqual(self.client.post("/patients", data={"display_name": "Nora"}, follow_redirects=False).headers["location"], "/login")
         self.assertEqual(self.client.post("/patients/1/bed", data={"bed_id": ""}, follow_redirects=False).headers["location"], "/login")
+        self.assertEqual(
+            self.client.post("/roster/assign-bed", data={"patient_id": "1", "bed_id": "3"}, follow_redirects=False).headers["location"],
+            "/login",
+        )
 
     def test_create_empty_room_then_add_bed(self):
         self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
