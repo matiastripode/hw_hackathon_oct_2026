@@ -4,8 +4,8 @@ An offline-first Raspberry Pi 4 prototype for handing off fictional caregiving
 updates. The [project plan](Offline%20Caregiver%20Handoff%20Board.html) describes
 the original single-patient workflow. The app has a demo login, a room/bed
 roster, basic fictional patient and bed-assignment management, and patient
-boards with symptom and task logging. Handoffs, live updates and GPIO are not
-implemented yet.
+boards with symptom and task logging and shift handoff notes. Live updates
+and GPIO are not implemented yet.
 Do not enter real patient information.
 
 ## Run
@@ -57,6 +57,12 @@ someone else's entries. There is no end-of-shift lock yet: authors can still
 edit their own entries after signing back in. This is a demo restriction, not
 real identity verification, since any caregiver can select another name on
 the dummy login screen.
+
+On each patient board, leave a handoff note for the next caregiver at the end
+of a shift. The latest note stays visible until a different signed-in
+caregiver acknowledges it. Only then can another note be submitted for that
+patient. Handoffs are patient-specific; open and completed items remain visible
+on the board, but notes do not freeze a snapshot of those items.
 
 On first launch, the app creates `data/handoff.sqlite3` in WAL mode. The demo
 starts with James in Room 101/Bed A, Lena in Room 101/Bed B, and an empty bed

@@ -95,6 +95,15 @@ main > section { margin-bottom: 2rem; }
 .log-action label, .entry-edit label { display: block; margin: .8rem 0 .3rem; font-weight: 650; }
 .log-action input:not([type="hidden"]), .log-action textarea, .log-action select, .entry-edit input, .entry-edit textarea, .entry-edit select { display: block; width: 100%; padding: .65rem; border: 1px solid #9bafa4; border-radius: 8px; background: white; color: #213631; font: inherit; }
 .log-action .primary-button, .entry-edit .primary-button { width: auto; }
+.handoff-note, .handoff-form { margin-top: .85rem; padding: 1.2rem 1.4rem; background: #fff; border: 1px solid #dce7df; border-radius: 12px; }
+.handoff-pending { border-left: 5px solid #a84f3d; }
+.handoff-note h3 { margin: .5rem 0; font-size: 1.2rem; }
+.handoff-note small, .handoff-status { color: #52655d; }
+.handoff-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.handoff-status { margin-bottom: 0; }
+.handoff-note .primary-button, .handoff-form .primary-button { width: auto; }
+.handoff-form label { display: block; font-weight: 650; margin-bottom: .4rem; }
+.handoff-form textarea { display: block; width: 100%; padding: .65rem; border: 1px solid #9bafa4; border-radius: 8px; font: inherit; }
 @media (max-width: 550px) {
   .header-row { display: block; }
   .account { margin-top: 1.5rem; }

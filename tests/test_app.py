@@ -519,6 +519,54 @@ class AppTests(unittest.TestCase):
                 self.assertIn(title, self.client.get("/patients/1").text)
                 self.assertNotIn(title, self.client.get("/patients/2").text)
 
+    def test_handoff_note_requires_other_caregiver_to_acknowledge(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        self.assertIn("No handoff yet", self.client.get("/patients/1").text)
+        response = self.client.post("/patients/1/handoffs", data={"note": "  Check <script>alert(1)</script>\nfirst.  "},
+                                    follow_redirects=False)
+        self.assertEqual((response.status_code, response.headers["location"]), (303, "/patients/1"))
+        with open_database(database_path()) as connection:
+            handoff = connection.execute("SELECT * FROM handoff WHERE patient_id = 1").fetchone()
+            self.assertEqual((handoff["author"], handoff["note"]), ("Maria", "Check <script>alert(1)</script>\nfirst."))
+        page = self.client.get("/patients/1").text
+        self.assertIn("Needs acknowledgement", page)
+        self.assertIn("&lt;script&gt;", page)
+        self.assertNotIn("<script>alert(1)</script>", page)
+        self.assertNotIn('action="/patients/1/handoffs" method="post"', page)
+        self.assertNotIn("Check &lt;script&gt;", self.client.get("/patients/2").text)
+        self.assertEqual(self.client.post("/patients/1/handoffs", data={"note": "Again"}).status_code, 409)
+        ack = f"/patients/1/handoffs/{handoff['id']}/acknowledge"
+        self.assertEqual(self.client.post(ack).status_code, 409)
+        self.client.post("/logout")
+        self.client.post("/login", data={"caregiver": "Alex", "password": "sixchars"})
+        self.assertIn(f'action="{ack}"', self.client.get("/patients/1").text)
+        self.assertEqual(self.client.post(ack, follow_redirects=False).status_code, 303)
+        self.assertIn("Acknowledged by Alex", self.client.get("/patients/1").text)
+        self.assertEqual(self.client.post(ack).status_code, 409)
+        self.assertEqual(self.client.post("/patients/1/handoffs", data={"note": "Next shift"},
+                                          follow_redirects=False).status_code, 303)
+        self.assertIn("From Alex", self.client.get("/patients/1").text)
+        self.assertEqual(self.client.post(ack).status_code, 409)
+
+    def test_handoff_validation_patient_scope_and_login(self):
+        path = "/patients/1/handoffs"
+        self.assertEqual(self.client.post(path, data={"note": "No"}, follow_redirects=False).headers["location"], "/login")
+        self.assertEqual(self.client.post(f"{path}/1/acknowledge", follow_redirects=False).headers["location"], "/login")
+        self.client.post("/patient/login", data={"patient_id": "1", "password": "sixchars"})
+        self.assertEqual(self.client.post(path, data={"note": "No"}, follow_redirects=False).headers["location"], "/login")
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        for note in ("", "   ", "x" * 1001):
+            with self.subTest(note=note[:10]):
+                self.assertEqual(self.client.post(path, data={"note": note}).status_code, 400)
+        self.assertEqual(self.client.post("/patients/999/handoffs", data={"note": "No"}).status_code, 404)
+        self.assertEqual(self.client.post("/patients/999/handoffs/1/acknowledge").status_code, 404)
+        self.assertEqual(self.client.post(path, data={"note": "For James"}, follow_redirects=False).status_code, 303)
+        self.assertEqual(self.client.post("/patients/2/handoffs/1/acknowledge").status_code, 409)
+        self.assertEqual(self.client.post("/patients/2/handoffs", data={"note": "For Lena"},
+                                          follow_redirects=False).status_code, 303)
+        with open_database(database_path()) as connection:
+            self.assertEqual(connection.execute("SELECT count(*) FROM handoff").fetchone()[0], 2)
+
     def test_quick_titles_are_available_for_both_log_forms(self):
         self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
         board = self.client.get("/patients/1").text

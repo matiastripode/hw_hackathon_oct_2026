@@ -172,7 +172,7 @@ def render_roster(request, error=None, status_code=200, room_error=None, bed_err
     )
 
 
-def render_patient(request, patient_id, error=None, status_code=200, entry_error=None):
+def render_patient(request, patient_id, error=None, status_code=200, entry_error=None, handoff_error=None):
     with open_database(database_path()) as connection:
         patient = connection.execute(
             """SELECT patient.id, patient.display_name, patient.bed_id, bed.room_label, bed.bed_label
@@ -189,6 +189,10 @@ def render_patient(request, patient_id, error=None, status_code=200, entry_error
                         updated_at DESC, id DESC""",
             (patient_id,),
         ).fetchall()
+        handoff = connection.execute(
+            "SELECT * FROM handoff WHERE patient_id = ? ORDER BY id DESC LIMIT 1",
+            (patient_id,),
+        ).fetchone()
         available_beds = connection.execute(
             """SELECT bed.id, bed.room_label, bed.bed_label FROM bed
                LEFT JOIN patient ON patient.bed_id = bed.id
@@ -201,6 +205,8 @@ def render_patient(request, patient_id, error=None, status_code=200, entry_error
         "index.html",
         {
             "entries": entries,
+            "handoff": handoff,
+            "handoff_error": handoff_error,
             "patient": patient,
             "available_beds": available_beds,
             "caregiver": request.session["caregiver"],
@@ -346,6 +352,63 @@ def patient_board(request: Request, patient_id: int):
     if not request.session.get("caregiver"):
         return RedirectResponse("/login", status_code=303)
     return render_patient(request, patient_id)
+
+
+@app.post("/patients/{patient_id}/handoffs")
+def submit_handoff(request: Request, patient_id: int, note: str = Form("")):
+    caregiver = request.session.get("caregiver")
+    if not caregiver:
+        return RedirectResponse("/login", status_code=303)
+    note = note.strip()
+    if not 1 <= len(note) <= 1000:
+        return render_patient(request, patient_id, status_code=400,
+                              handoff_error="Enter a handoff note (up to 1000 characters).")
+    with open_database(database_path()) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        if not connection.execute("SELECT 1 FROM patient WHERE id = ? AND active = 1", (patient_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="Patient not found")
+        pending = connection.execute(
+            "SELECT 1 FROM handoff WHERE patient_id = ? AND acknowledged_at IS NULL LIMIT 1", (patient_id,)
+        ).fetchone()
+        if not pending:
+            connection.execute(
+                "INSERT INTO handoff (patient_id, author, note) VALUES (?, ?, ?)",
+                (patient_id, caregiver, note),
+            )
+    if pending:
+        return render_patient(request, patient_id, status_code=409,
+                              handoff_error="A handoff is already awaiting acknowledgement.")
+    return RedirectResponse(f"/patients/{patient_id}", status_code=303)
+
+
+@app.post("/patients/{patient_id}/handoffs/{handoff_id}/acknowledge")
+def acknowledge_handoff(request: Request, patient_id: int, handoff_id: int):
+    caregiver = request.session.get("caregiver")
+    if not caregiver:
+        return RedirectResponse("/login", status_code=303)
+    with open_database(database_path()) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        if not connection.execute("SELECT 1 FROM patient WHERE id = ? AND active = 1", (patient_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="Patient not found")
+        latest = connection.execute(
+            "SELECT id, author, acknowledged_at FROM handoff WHERE patient_id = ? ORDER BY id DESC LIMIT 1",
+            (patient_id,),
+        ).fetchone()
+        if latest is None or latest["id"] != handoff_id or latest["acknowledged_at"]:
+            error = "This handoff is no longer awaiting acknowledgement."
+        elif latest["author"] == caregiver:
+            error = "Another caregiver needs to acknowledge this handoff."
+        else:
+            error = None
+            connection.execute(
+                """UPDATE handoff SET acknowledged_by = ?,
+                       acknowledged_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                   WHERE id = ? AND patient_id = ?""",
+                (caregiver, handoff_id, patient_id),
+            )
+    if error:
+        return render_patient(request, patient_id, status_code=409, handoff_error=error)
+    return RedirectResponse(f"/patients/{patient_id}", status_code=303)
 
 
 @app.post("/patients")
