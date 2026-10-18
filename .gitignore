@@ -28,3 +28,8 @@ out/
 *.log
 tmp/
 temp/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+data/

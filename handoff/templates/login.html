@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Caregiver Handoff Board</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <script src="{{ url_for('static', path='/login.js') }}" defer></script>
+</head>
+<body>
+  <div class="disclaimer" role="note">Prototype · fictional data only · not medical advice</div>
+  <header>
+    <div class="wrap">
+      <p class="eyebrow">Offline caregiver handoff</p>
+      <h1>Welcome to the care board</h1>
+      <p>Choose who you’re signing in as to see the patient roster.</p>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="login-card" aria-labelledby="login-title">
+      <h2 id="login-title">Sign in for the demo</h2>
+      <p class="demo-note">Demo login — no real authentication. Use fictional names only.</p>
+      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+      <form action="/login" method="post">
+        <label for="caregiver">Choose a caregiver</label>
+        <select id="caregiver" name="caregiver" required>
+          <option value="">Select a caregiver</option>
+          {% for person in caregivers %}
+          <option value="{{ person['name'] }}" {% if selected_caregiver == person['name'] %}selected{% endif %}>{{ person["name"] }}</option>
+          {% endfor %}
+        </select>
+        <label for="password">Demo password</label>
+        <input id="password" name="password" type="password" minlength="6" required autocomplete="off" placeholder="At least 6 characters">
+        <p class="field-hint">Any password of at least 6 characters works. Only its length is checked; it is never stored.</p>
+        <button class="primary-button" id="open-board" type="submit">Open care board</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

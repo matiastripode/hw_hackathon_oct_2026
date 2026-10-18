@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+{% macro edit_action(entry, caregiver) %}
+  {% if entry["author"] == caregiver and entry["type"] in ["symptom", "task"] %}
+  <details class="entry-edit">
+    <summary>Edit your {{ entry["type"] }}</summary>
+    <form action="/patients/{{ patient['id'] }}/entries/{{ entry['id'] }}" method="post">
+      <label for="edit-title-{{ entry['id'] }}">Title</label>
+      <input id="edit-title-{{ entry['id'] }}" name="title" value="{{ entry['title'] }}" maxlength="120" required>
+      <label for="edit-details-{{ entry['id'] }}">Details</label>
+      <textarea id="edit-details-{{ entry['id'] }}" name="details" maxlength="2000" rows="3">{{ entry["details"] }}</textarea>
+      <label for="edit-severity-{{ entry['id'] }}">Priority</label>
+      <select id="edit-severity-{{ entry['id'] }}" name="severity">
+        {% for level in ["low", "medium", "high"] %}
+        <option value="{{ level }}" {% if entry["severity"] == level %}selected{% endif %}>{{ level | capitalize }}</option>
+        {% endfor %}
+      </select>
+      <label for="edit-status-{{ entry['id'] }}">Status</label>
+      <select id="edit-status-{{ entry['id'] }}" name="status">
+        <option value="open" {% if entry["status"] == "open" %}selected{% endif %}>Open</option>
+        <option value="done" {% if entry["status"] == "done" %}selected{% endif %}>Done</option>
+      </select>
+      <button class="primary-button" type="submit">Save changes</button>
+    </form>
+  </details>
+  {% endif %}
+{% endmacro %}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caregiver Handoff Board</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <script src="{{ url_for('static', path='/entry-presets.js') }}" defer></script>
+</head>
+<body>
+  <div class="disclaimer" role="note">Prototype · fictional data only · not medical advice</div>
+  <header>
+    <div class="wrap header-row">
+      <div>
+        <p class="eyebrow">Offline caregiver handoff</p>
+        <h1>{{ patient["display_name"] }}’s care board</h1>
+        <p class="patient-location">Demo patient #{{ patient["id"] }} · {% if patient["bed_id"] %}Room {{ patient["room_label"] }} · Bed {{ patient["bed_label"] }}{% else %}Unassigned{% endif %}</p>
+        <p>A quiet place to see what needs attention before the next shift.</p>
+      </div>
+      <div class="account">
+        <span>Signed in as {{ caregiver }}</span>
+        <form action="/logout" method="post"><button type="submit">Sign out</button></form>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
+    <a class="back-link" href="/">← Back to rooms and beds</a>
+    <section class="intro" aria-label="Project status">
+      <span class="badge">Demo care board</span>
+      <p>Log fictional symptoms or tasks. Only their original author can edit them; shift handoffs are coming later.</p>
+    </section>
+    <section aria-labelledby="log-title">
+      <h2 id="log-title">Log an update</h2>
+      {% if entry_error %}<p class="form-error" role="alert">{{ entry_error }}</p>{% endif %}
+      <div class="entry-actions">
+        {% for entry_type, label in [("symptom", "Log symptom"), ("task", "Add task")] %}
+        <details class="log-action">
+          <summary>{{ label }}</summary>
+          <form action="/patients/{{ patient['id'] }}/entries" method="post">
+            <input type="hidden" name="type" value="{{ entry_type }}">
+            <label for="{{ entry_type }}-preset">Common {{ entry_type }}</label>
+            <select id="{{ entry_type }}-preset" class="preset-select" aria-describedby="{{ entry_type }}-preset-help">
+              <option value="">Choose a quick title (optional)</option>
+              {% for title in entry_presets[entry_type] %}
+              <option value="{{ title }}">{{ title }}</option>
+              {% endfor %}
+            </select>
+            <p class="field-hint" id="{{ entry_type }}-preset-help">Fills the title only. Review the details and priority before saving.</p>
+            <label for="{{ entry_type }}-title">Title</label>
+            <input id="{{ entry_type }}-title" name="title" maxlength="120" required placeholder="{% if entry_type == 'symptom' %}E.g. Dizziness{% else %}E.g. Confirm transportation{% endif %}">
+            <label for="{{ entry_type }}-details">Details</label>
+            <textarea id="{{ entry_type }}-details" name="details" maxlength="2000" rows="3" placeholder="Fictional details only"></textarea>
+            <label for="{{ entry_type }}-severity">Priority</label>
+            <select id="{{ entry_type }}-severity" name="severity">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <label for="{{ entry_type }}-status">Status</label>
+            <select id="{{ entry_type }}-status" name="status">
+              <option value="open">Open</option>
+              <option value="done">Done</option>
+            </select>
+            <button class="primary-button" type="submit">Save {{ entry_type }}</button>
+          </form>
+        </details>
+        {% endfor %}
+      </div>
+    </section>
+    <section aria-labelledby="open-title">
+      <div class="section-heading">
+        <h2 id="open-title">Needs attention</h2>
+        <span>Open items</span>
+      </div>
+      <div class="entries">
+        {% for entry in entries if entry["status"] == "open" %}
+        <article class="entry">
+          <div class="entry-top">
+            <span class="type">{{ entry["type"] | capitalize }}</span>
+            <span class="severity {{ entry['severity'] }}">{{ entry["severity"] | capitalize }} priority</span>
+          </div>
+          <h3>{{ entry["title"] }}</h3>
+          <p>{{ entry["details"] }}</p>
+          {% if entry["value"] %}
+          <p class="value">{% if entry["previous_value"] %}{{ entry["previous_value"] }} → {% endif %}{{ entry["value"] }}</p>
+          {% endif %}
+          <small>Recorded by {{ entry["author"] }} · {{ entry["created_at"] }}{% if entry["updated_at"] != entry["created_at"] %} · Updated {{ entry["updated_at"] }}{% endif %}</small>
+          {{ edit_action(entry, caregiver) }}
+        </article>
+        {% else %}
+        <p class="empty">Nothing needs attention right now.</p>
+        {% endfor %}
+      </div>
+    </section>
+    <section aria-labelledby="done-title">
+      <div class="section-heading">
+        <h2 id="done-title">Completed</h2>
+      </div>
+      <div class="entries">
+        {% for entry in entries if entry["status"] == "done" %}
+        <article class="entry">
+          <div class="entry-top"><span class="type">{{ entry["type"] | capitalize }}</span><span class="complete">Done</span></div>
+          <h3>{{ entry["title"] }}</h3>
+          <p>{{ entry["details"] }}</p>
+          <small>Recorded by {{ entry["author"] }} · {{ entry["created_at"] }}{% if entry["updated_at"] != entry["created_at"] %} · Updated {{ entry["updated_at"] }}{% endif %}</small>
+          {{ edit_action(entry, caregiver) }}
+        </article>
+        {% else %}
+        <p class="empty">No completed items yet.</p>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="bed-form" aria-labelledby="assignment-title">
+      <h2 id="assignment-title">Bed assignment</h2>
+      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+      <form action="/patients/{{ patient['id'] }}/bed" method="post">
+        <label for="bed-id">Patient location</label>
+        <select id="bed-id" name="bed_id">
+          <option value="" {% if not patient["bed_id"] %}selected{% endif %}>Unassigned</option>
+          {% for bed in available_beds %}
+          <option value="{{ bed['id'] }}" {% if patient["bed_id"] == bed["id"] %}selected{% endif %}>Room {{ bed["room_label"] }} · Bed {{ bed["bed_label"] }}</option>
+          {% endfor %}
+        </select>
+        <button class="primary-button" type="submit">Update bed</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

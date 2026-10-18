@@ -1,0 +1,87 @@
+:root {
+  color-scheme: light;
+  font: 16px/1.5 system-ui, sans-serif;
+  color: #213631;
+  background: #f5f8f5;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+.wrap { width: min(100% - 2rem, 850px); margin: 0 auto; }
+.disclaimer { padding: .55rem 1rem; text-align: center; background: #fff0cf; color: #674400; font-weight: 650; font-size: .9rem; }
+header { padding: 2.8rem 0 3rem; background: #184e48; color: white; }
+.eyebrow { margin: 0 0 .5rem; text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; font-weight: 700; color: #bee9dc; }
+h1 { margin: 0; font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; }
+header p:last-child { margin-bottom: 0; color: #d7ebe5; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem; }
+.account { display: flex; align-items: center; gap: .8rem; white-space: nowrap; font-size: .9rem; }
+.account button { border: 1px solid #b9dbd0; border-radius: 8px; padding: .5rem .8rem; color: white; background: transparent; cursor: pointer; font: inherit; }
+.account button:hover { background: #2a6960; }
+main { padding: 2rem 0 4rem; }
+main > section { margin-bottom: 2rem; }
+.roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; }
+.room-group { --room-accent: #59645e; --room-bg: #f0f3f1; margin-bottom: 1.6rem; padding: 1rem; border-left: 5px solid var(--room-accent); border-radius: 12px; background: var(--room-bg); }
+.room-occupied { --room-accent: #922f2b; --room-bg: #fff0ee; }
+.room-free { --room-accent: #176343; --room-bg: #e8f6ed; }
+.room-partial { --room-accent: #805500; --room-bg: #fff4d8; }
+.room-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; }
+.room-group h3 { margin: 0; }
+.room-status { padding: .25rem .7rem; border: 1px solid var(--room-accent); border-radius: 999px; color: var(--room-accent); background: white; font-size: .85rem; font-weight: 700; }
+.facility-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.roster-card, .patient-form, .bed-form { padding: 1.2rem 1.4rem; border: 1px solid #dce7df; border-radius: 12px; background: white; }
+.roster-card .eyebrow { color: #397362; }
+.roster-card h3, .roster-card h4 { margin: .4rem 0; font-size: 1.1rem; }
+.roster-card p { margin: .3rem 0 .75rem; color: #52655d; }
+.roster-card a, .back-link { color: #135a50; font-weight: 700; }
+.back-link { display: inline-block; margin-bottom: 1.5rem; }
+.patient-location { margin: .5rem 0; color: #d7ebe5; font-weight: 700; }
+.patient-form { max-width: 500px; }
+.patient-form h2, .bed-form h2 { margin-top: 0; }
+.patient-form label, .bed-form label { display: block; margin: 1rem 0 .4rem; font-weight: 650; }
+.patient-form input, .patient-form select, .bed-form select { display: block; width: 100%; padding: .7rem; border: 1px solid #9bafa4; border-radius: 8px; background: white; color: #213631; font: inherit; }
+.bed-form { margin-top: 2rem; max-width: 500px; }
+.patient-form .primary-button, .bed-form .primary-button { width: auto; }
+.login-card { max-width: 500px; margin: 0 auto; padding: 1.8rem; border: 1px solid #dce7df; border-radius: 12px; background: white; }
+.login-card h2 { margin: 0 0 .5rem; }
+.demo-note { margin: 0 0 1.5rem; color: #52655d; }
+.login-card label { display: block; margin: 1rem 0 .4rem; font-weight: 650; }
+.login-card input, .login-card select { display: block; width: 100%; padding: .7rem; border: 1px solid #9bafa4; border-radius: 8px; background: white; color: #213631; font: inherit; }
+.field-hint { margin: .3rem 0 0; color: #52655d; font-size: .85rem; }
+.form-error { padding: .8rem; border-radius: 8px; background: #ffdfdc; color: #862823; }
+.primary-button { width: 100%; margin-top: 1.5rem; padding: .8rem; border: 0; border-radius: 8px; background: #184e48; color: white; cursor: pointer; font: inherit; font-weight: 700; }
+.primary-button:hover { background: #28675d; }
+.primary-button:disabled { background: #a7b9b0; cursor: not-allowed; }
+.primary-button:focus-visible, .account button:focus-visible, .login-card input:focus-visible, .login-card select:focus-visible { outline: 3px solid #d69b38; outline-offset: 2px; }
+.intro { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; background: #e4f3ed; border-radius: 12px; }
+.intro p { margin: 0; }
+.badge { flex: none; border-radius: 999px; padding: .3rem .7rem; background: #fff; font-size: .8rem; font-weight: 700; }
+.section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-top: 2rem; }
+.section-heading h2 { margin: 0 0 .9rem; font-size: 1.4rem; }
+.section-heading span { color: #61736b; font-size: .85rem; }
+.entries { display: grid; gap: .85rem; }
+.entry, .empty { margin: 0; padding: 1.2rem 1.4rem; background: white; border: 1px solid #dce7df; border-radius: 12px; }
+.entry-top { display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+.type { text-transform: uppercase; letter-spacing: .1em; color: #4e7165; font-size: .75rem; font-weight: 700; }
+.severity, .complete { border-radius: 999px; padding: .2rem .65rem; font-size: .78rem; font-weight: 700; }
+.severity.low { background: #e5f3eb; color: #226243; }
+.severity.medium { background: #fff0cc; color: #795000; }
+.severity.high { background: #ffdfdc; color: #972b26; }
+.complete { background: #e5f3eb; color: #226243; }
+.entry h3 { margin: .45rem 0 .2rem; font-size: 1.1rem; }
+.entry p { margin: 0 0 .6rem; color: #52655d; }
+.entry .value { color: #184e48; font-weight: 650; }
+.entry small { color: #65756d; }
+.entry-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: .85rem; }
+.log-action, .entry-edit { border: 1px solid #dce7df; border-radius: 12px; background: white; padding: 1rem 1.2rem; }
+.log-action summary, .entry-edit summary { cursor: pointer; color: #135a50; font-weight: 700; }
+.entry-edit { margin-top: 1rem; padding: .6rem .8rem; background: #f5f8f5; }
+.log-action form, .entry-edit form { margin-top: 1rem; }
+.log-action .field-hint { margin: .35rem 0 .8rem; }
+.log-action label, .entry-edit label { display: block; margin: .8rem 0 .3rem; font-weight: 650; }
+.log-action input:not([type="hidden"]), .log-action textarea, .log-action select, .entry-edit input, .entry-edit textarea, .entry-edit select { display: block; width: 100%; padding: .65rem; border: 1px solid #9bafa4; border-radius: 8px; background: white; color: #213631; font: inherit; }
+.log-action .primary-button, .entry-edit .primary-button { width: auto; }
+@media (max-width: 550px) {
+  .header-row { display: block; }
+  .account { margin-top: 1.5rem; }
+  .intro { display: block; }
+  .intro p { margin-top: .65rem; }
+}
