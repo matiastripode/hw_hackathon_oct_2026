@@ -25,6 +25,9 @@ header p:last-child { margin-bottom: 0; color: #d7ebe5; }
 main { padding: 2rem 0 4rem; }
 main > section { margin-bottom: 2rem; }
 .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; }
+.pagination { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin: 1rem 0; color: #52655d; }
+.pagination a { padding: .45rem .8rem; border: 1px solid #9bafa4; border-radius: 8px; color: #135a50; background: white; font-weight: 700; }
+.pagination a:focus-visible { outline: 3px solid #d69b38; outline-offset: 2px; }
 .room-group { --room-accent: #59645e; --room-bg: #f0f3f1; margin-bottom: 1.6rem; padding: 1rem; border-left: 5px solid var(--room-accent); border-radius: 12px; background: var(--room-bg); }
 .room-occupied { --room-accent: #922f2b; --room-bg: #fff0ee; }
 .room-free { --room-accent: #176343; --room-bg: #e8f6ed; }
@@ -32,7 +35,6 @@ main > section { margin-bottom: 2rem; }
 .room-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; }
 .room-group h3 { margin: 0; }
 .room-status { padding: .25rem .7rem; border: 1px solid var(--room-accent); border-radius: 999px; color: var(--room-accent); background: white; font-size: .85rem; font-weight: 700; }
-.facility-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
 .roster-card, .patient-form, .bed-form { padding: 1.2rem 1.4rem; border: 1px solid #dce7df; border-radius: 12px; background: white; }
 .roster-card .eyebrow { color: #397362; }
 .roster-card h3, .roster-card h4 { margin: .4rem 0; font-size: 1.1rem; }
@@ -42,6 +44,8 @@ main > section { margin-bottom: 2rem; }
 .patient-location { margin: .5rem 0; color: #d7ebe5; font-weight: 700; }
 .patient-form { max-width: 500px; }
 .patient-form h2, .bed-form h2 { margin-top: 0; }
+.form-subheading { margin: 1.5rem 0 .2rem; padding-top: 1rem; border-top: 1px solid #dce7df; font-size: 1.05rem; }
+.patient-form .optional { color: #52655d; font-size: .85rem; font-weight: 400; }
 .patient-form label, .bed-form label { display: block; margin: 1rem 0 .4rem; font-weight: 650; }
 .patient-form input, .patient-form select, .bed-form select { display: block; width: 100%; padding: .7rem; border: 1px solid #9bafa4; border-radius: 8px; background: white; color: #213631; font: inherit; }
 .bed-form { margin-top: 2rem; max-width: 500px; }

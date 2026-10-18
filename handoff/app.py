@@ -4,7 +4,7 @@ import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import FastAPI, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -17,6 +17,7 @@ ASSETS = Path(__file__).resolve().parent
 EDITABLE_ENTRY_TYPES = {"symptom", "task"}
 SEVERITIES = {"low", "medium", "high"}
 ENTRY_STATUSES = {"open", "done"}
+ROSTER_PAGE_SIZE = 3
 ENTRY_PRESETS = {
     "symptom": ("Dizziness", "Pain or discomfort", "Poor sleep", "Reduced appetite"),
     "task": ("Confirm transportation", "Prepare appointment notes", "Check supplies", "Confirm follow-up appointment"),
@@ -85,13 +86,21 @@ def logout(request: Request):
 
 
 @app.get("/", response_class=HTMLResponse)
-def roster(request: Request):
+def roster(request: Request, room_page: int = Query(1, ge=1), patient_page: int = Query(1, ge=1)):
     if not request.session.get("caregiver"):
         return RedirectResponse("/login", status_code=303)
-    return render_roster(request)
+    return render_roster(request, room_page=room_page, patient_page=patient_page)
 
 
-def render_roster(request, error=None, status_code=200, room_error=None, bed_error=None):
+def paginate(items, page):
+    pages = max(1, (len(items) + ROSTER_PAGE_SIZE - 1) // ROSTER_PAGE_SIZE)
+    page = min(page, pages)
+    start = (page - 1) * ROSTER_PAGE_SIZE
+    return items[start:start + ROSTER_PAGE_SIZE], page, pages
+
+
+def render_roster(request, error=None, status_code=200, room_error=None, bed_error=None,
+                  room_page=1, patient_page=1, form_values=None):
     with open_database(database_path()) as connection:
         rooms = []
         for row in connection.execute(
@@ -121,17 +130,37 @@ def render_roster(request, error=None, status_code=200, room_error=None, bed_err
         unassigned = connection.execute(
             "SELECT id, display_name FROM patient WHERE bed_id IS NULL AND active = 1 ORDER BY display_name, id"
         ).fetchall()
+    visible_rooms, room_page, room_pages = paginate(rooms, room_page)
+    visible_patients, patient_page, patient_pages = paginate(unassigned, patient_page)
+    visible_beds, bed_pages = {}, {}
+    for room in visible_rooms:
+        room_beds = [bed for bed in beds if bed["room_label"] == room["label"]]
+        try:
+            requested_page = max(1, int(request.query_params.get(f"bed_page_{room['id']}", "1")))
+        except ValueError:
+            requested_page = 1
+        visible_beds[room["id"]], current_page, total_pages = paginate(room_beds, requested_page)
+        bed_pages[room["id"]] = (current_page, total_pages)
     return templates.TemplateResponse(
         request,
         "roster.html",
         {
             "caregiver": request.session["caregiver"],
             "rooms": rooms,
+            "visible_rooms": visible_rooms,
+            "room_page": room_page,
+            "room_pages": room_pages,
             "beds": beds,
-            "unassigned": unassigned,
+            "visible_beds": visible_beds,
+            "bed_pages": bed_pages,
+            "unassigned": visible_patients,
+            "patient_page": patient_page,
+            "patient_pages": patient_pages,
+            "unassigned_count": len(unassigned),
             "error": error,
             "room_error": room_error,
             "bed_error": bed_error,
+            "form_values": form_values or {},
         },
         status_code=status_code,
     )
@@ -189,16 +218,93 @@ def selected_bed(connection, bed_id):
     return selected_id
 
 
-@app.post("/rooms")
-def create_room(request: Request, label: str = Form("")):
+@app.post("/roster/add")
+def add_to_roster(request: Request, room_id: str = Form(""),
+                  label: str = Form(""), bed_label: str = Form(""),
+                  display_name: str = Form(""), bed_id: str = Form("")):
     if not request.session.get("caregiver"):
         return RedirectResponse("/login", status_code=303)
+    values = dict(room_id=room_id, label=label, bed_label=bed_label, display_name=display_name, bed_id=bed_id)
+
+    def invalid(message, status=400):
+        return render_roster(request, error=message, status_code=status, form_values=values)
+
+    label, bed_label, name = label.strip(), bed_label.strip(), display_name.strip()
+    if not any((label, room_id, bed_label, name, bed_id)):
+        return invalid("Enter a room, bed, or fictional patient to add.")
+    if values["label"] and (not 1 <= len(label) <= 40 or not label.isprintable()):
+        return invalid("Enter a room label (up to 40 characters).")
+    if values["bed_label"] and (not 1 <= len(bed_label) <= 20 or not bed_label.isprintable()):
+        return invalid("Enter a bed label (up to 20 characters).")
+    if values["display_name"] and (not 1 <= len(name) <= 80 or not name.isprintable()):
+        return invalid("Enter a fictional patient name (up to 80 characters).")
+    if label and room_id:
+        return invalid("Choose a new room label or an existing room, not both.")
+    if room_id and not bed_label:
+        return invalid("Enter a bed label for the selected room.")
+    if bed_label and not (label or room_id):
+        return invalid("Enter a new room label or choose an existing room for the bed.")
+    if bed_id and not name:
+        return invalid("Enter a fictional patient name to assign a bed.")
+
+    stage = "room"
+    try:
+        with open_database(database_path()) as connection:
+            room_label = label
+            if label:
+                connection.execute("INSERT INTO room (label) VALUES (?)", (label,))
+            elif room_id:
+                try:
+                    selected_room = int(room_id)
+                except ValueError as exc:
+                    raise ValueError("Choose an existing room for the new bed.") from exc
+                room = connection.execute("SELECT label FROM room WHERE id = ?", (selected_room,)).fetchone()
+                if room is None:
+                    raise ValueError("Choose an existing room for the new bed.")
+                room_label = room["label"]
+            new_bed_id = None
+            if bed_label:
+                stage = "bed"
+                new_bed_id = connection.execute(
+                    "INSERT INTO bed (room_label, bed_label) VALUES (?, ?)", (room_label, bed_label)
+                ).lastrowid
+            patient_id = None
+            if name:
+                stage = "patient"
+                assigned_bed = selected_bed(connection, bed_id) if bed_id else new_bed_id
+                patient_id = connection.execute(
+                    "INSERT INTO patient (display_name, bed_id) VALUES (?, ?)", (name, assigned_bed)
+                ).lastrowid
+    except ValueError as exc:
+        return invalid(str(exc))
+    except sqlite3.IntegrityError:
+        message = {
+            "room": "That room already exists.",
+            "bed": "That bed already exists in this room.",
+            "patient": "That bed is already occupied.",
+        }[stage]
+        return invalid(message, 409)
+    return RedirectResponse(f"/patients/{patient_id}" if patient_id else "/", status_code=303)
+
+
+@app.post("/rooms")
+def create_room(request: Request, label: str = Form(""), room_id: str = Form("new"),
+                bed_label: str = Form("")):
+    if not request.session.get("caregiver"):
+        return RedirectResponse("/login", status_code=303)
+    if room_id != "new":
+        return create_bed(request, room_id, bed_label)
     label = label.strip()
+    bed_label = bed_label.strip()
     if not 1 <= len(label) <= 40 or not label.isprintable():
         return render_roster(request, status_code=400, room_error="Enter a room label (up to 40 characters).")
+    if bed_label and (len(bed_label) > 20 or not bed_label.isprintable()):
+        return render_roster(request, status_code=400, room_error="Enter a bed label (up to 20 characters).")
     try:
         with open_database(database_path()) as connection:
             connection.execute("INSERT INTO room (label) VALUES (?)", (label,))
+            if bed_label:
+                connection.execute("INSERT INTO bed (room_label, bed_label) VALUES (?, ?)", (label, bed_label))
     except sqlite3.IntegrityError:
         return render_roster(request, status_code=409, room_error="That room already exists.")
     return RedirectResponse("/", status_code=303)
@@ -237,22 +343,42 @@ def patient_board(request: Request, patient_id: int):
 
 
 @app.post("/patients")
-def create_patient(request: Request, display_name: str = Form(""), bed_id: str = Form("")):
+def create_patient(request: Request, display_name: str = Form(""), bed_id: str = Form(""),
+                   new_room_id: str = Form(""), new_bed_label: str = Form("")):
     if not request.session.get("caregiver"):
         return RedirectResponse("/login", status_code=303)
     name = display_name.strip()
     if not name or len(name) > 80 or not name.isprintable():
         return render_roster(request, "Enter a fictional patient name (up to 80 characters).", 400)
+    new_bed_label = new_bed_label.strip()
+    if bed_id and (new_room_id or new_bed_label):
+        return render_roster(request, "Choose an available bed or create a new one, not both.", 400)
+    if new_bed_label and not new_room_id:
+        return render_roster(request, "Choose a room for the new bed.", 400)
+    if new_room_id and (not 1 <= len(new_bed_label) <= 20 or not new_bed_label.isprintable()):
+        return render_roster(request, "Enter a bed label (up to 20 characters).", 400)
     try:
         with open_database(database_path()) as connection:
             assigned_bed = selected_bed(connection, bed_id)
+            if new_room_id:
+                try:
+                    room_id = int(new_room_id)
+                except ValueError as exc:
+                    raise ValueError("Choose an existing room for the new bed.") from exc
+                room = connection.execute("SELECT label FROM room WHERE id = ?", (room_id,)).fetchone()
+                if room is None:
+                    raise ValueError("Choose an existing room for the new bed.")
+                assigned_bed = connection.execute(
+                    "INSERT INTO bed (room_label, bed_label) VALUES (?, ?)", (room["label"], new_bed_label)
+                ).lastrowid
             patient_id = connection.execute(
                 "INSERT INTO patient (display_name, bed_id) VALUES (?, ?)", (name, assigned_bed)
             ).lastrowid
     except ValueError as exc:
         return render_roster(request, str(exc), 400)
     except sqlite3.IntegrityError:
-        return render_roster(request, "That bed is already occupied.", 409)
+        message = "That bed already exists in this room." if new_room_id else "That bed is already occupied."
+        return render_roster(request, message, 409)
     return RedirectResponse(f"/patients/{patient_id}", status_code=303)
 
 

@@ -29,14 +29,14 @@
   <main class="wrap">
     <section aria-labelledby="roster-title">
       <h2 id="roster-title">Patient roster</h2>
-      {% for room in rooms %}
+      {% for room in visible_rooms %}
       <div class="room-group room-{{ room['state'] }}">
         <div class="room-heading">
           <h3>Room {{ room["label"] }}</h3>
           <span class="room-status">{{ room["status"] }}</span>
         </div>
         <div class="roster-grid">
-          {% for bed in beds if bed["room_label"] == room["label"] %}
+          {% for bed in visible_beds[room["id"]] %}
           <article class="roster-card">
             <p class="eyebrow">Room {{ room["label"] }} · Bed {{ bed["bed_label"] }}</p>
             {% if bed["patient_id"] %}
@@ -52,10 +52,25 @@
           <p class="empty">No beds yet</p>
           {% endfor %}
         </div>
+        {% set bed_page, total_bed_pages = bed_pages[room["id"]] %}
+        {% if total_bed_pages > 1 %}
+        <nav class="pagination" aria-label="Room {{ room['label'] }} bed pages">
+          {% if bed_page > 1 %}<a href="/?room_page={{ room_page }}&amp;patient_page={{ patient_page }}&amp;bed_page_{{ room['id'] }}={{ bed_page - 1 }}">Previous beds</a>{% endif %}
+          <span>Beds page {{ bed_page }} of {{ total_bed_pages }}</span>
+          {% if bed_page < total_bed_pages %}<a href="/?room_page={{ room_page }}&amp;patient_page={{ patient_page }}&amp;bed_page_{{ room['id'] }}={{ bed_page + 1 }}">Next beds</a>{% endif %}
+        </nav>
+        {% endif %}
       </div>
       {% endfor %}
+      {% if room_pages > 1 %}
+      <nav class="pagination" aria-label="Room pages">
+        {% if room_page > 1 %}<a href="/?room_page={{ room_page - 1 }}&amp;patient_page={{ patient_page }}">Previous rooms</a>{% endif %}
+        <span>Rooms page {{ room_page }} of {{ room_pages }}</span>
+        {% if room_page < room_pages %}<a href="/?room_page={{ room_page + 1 }}&amp;patient_page={{ patient_page }}">Next rooms</a>{% endif %}
+      </nav>
+      {% endif %}
     </section>
-    {% if unassigned %}
+    {% if unassigned_count %}
     <section aria-labelledby="unassigned-title">
       <h2 id="unassigned-title">Unassigned patients</h2>
       <div class="roster-grid">
@@ -67,52 +82,46 @@
         </article>
         {% endfor %}
       </div>
+      {% if patient_pages > 1 %}
+      <nav class="pagination" aria-label="Unassigned patient pages">
+        {% if patient_page > 1 %}<a href="/?room_page={{ room_page }}&amp;patient_page={{ patient_page - 1 }}">Previous patients</a>{% endif %}
+        <span>Patients page {{ patient_page }} of {{ patient_pages }}</span>
+        {% if patient_page < patient_pages %}<a href="/?room_page={{ room_page }}&amp;patient_page={{ patient_page + 1 }}">Next patients</a>{% endif %}
+      </nav>
+      {% endif %}
     </section>
     {% endif %}
-    <div class="facility-forms">
-      <section class="patient-form" aria-labelledby="add-room-title">
-        <h2 id="add-room-title">Add a room</h2>
-        <p>Rooms can be empty until beds are added.</p>
-        {% if room_error %}<p class="form-error" role="alert">{{ room_error }}</p>{% endif %}
-        <form action="/rooms" method="post">
-          <label for="room-label">Room label</label>
-          <input id="room-label" name="label" type="text" maxlength="40" required placeholder="E.g. 103">
-          <button class="primary-button" type="submit">Add room</button>
-        </form>
-      </section>
-      <section class="patient-form" aria-labelledby="add-bed-title">
-        <h2 id="add-bed-title">Add a bed</h2>
-        <p>Select an existing room first.</p>
-        {% if bed_error %}<p class="form-error" role="alert">{{ bed_error }}</p>{% endif %}
-        <form action="/beds" method="post">
-          <label for="new-bed-room">Room</label>
-          <select id="new-bed-room" name="room_id" required>
-            <option value="">Select a room</option>
-            {% for room in rooms %}
-            <option value="{{ room['id'] }}">{{ room["label"] }}</option>
-            {% endfor %}
-          </select>
-          <label for="new-bed-label">Bed label</label>
-          <input id="new-bed-label" name="bed_label" type="text" maxlength="20" required placeholder="E.g. A">
-          <button class="primary-button" type="submit">Add bed</button>
-        </form>
-      </section>
-    </div>
-    <section class="patient-form" aria-labelledby="add-patient-title">
-      <h2 id="add-patient-title">Add a fictional patient</h2>
-      <p>Use fictional names only. A bed may be assigned now or later.</p>
-      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
-      <form action="/patients" method="post">
-        <label for="display-name">Patient display name</label>
-        <input id="display-name" name="display_name" type="text" maxlength="80" required autocomplete="off">
-        <label for="bed-id">Available bed</label>
-        <select id="bed-id" name="bed_id">
-          <option value="">Unassigned</option>
-          {% for bed in beds if not bed["patient_id"] %}
-          <option value="{{ bed['id'] }}">Room {{ bed["room_label"] }} · Bed {{ bed["bed_label"] }}</option>
+    <section class="patient-form" aria-labelledby="add-roster-title">
+      <h2 id="add-roster-title">Add to the roster</h2>
+      <p>Fill in only what you want to add. Combine a room, bed, and fictional patient in one step.</p>
+      {% if error or room_error or bed_error %}<p class="form-error" role="alert">{{ error or room_error or bed_error }}</p>{% endif %}
+      <form action="/roster/add" method="post">
+        <h3 class="form-subheading">Room &amp; bed</h3>
+        <label for="room-label">New room label <span class="optional">(optional)</span></label>
+        <input id="room-label" name="label" type="text" maxlength="40" placeholder="E.g. 103" value="{{ form_values.get('label', '') }}">
+        <p class="field-hint">Leave the bed label blank to create an empty room.</p>
+        <label for="facility-room">Or choose an existing room <span class="optional">(optional)</span></label>
+        <select id="facility-room" name="room_id">
+          <option value="">No existing room selected</option>
+          {% for room in rooms %}
+          <option value="{{ room['id'] }}" {% if form_values.get('room_id') == room['id'] | string %}selected{% endif %}>{{ room["label"] }} ({{ room["bed_count"] }} {{ "bed" if room["bed_count"] == 1 else "beds" }})</option>
           {% endfor %}
         </select>
-        <button class="primary-button" type="submit">Add patient</button>
+        <p class="field-hint">Choose this instead of a new room label when adding a bed to an existing room.</p>
+        <label for="new-bed-label">New bed label <span class="optional">(optional)</span></label>
+        <input id="new-bed-label" name="bed_label" type="text" maxlength="20" placeholder="E.g. A" value="{{ form_values.get('bed_label', '') }}">
+        <h3 class="form-subheading">Fictional patient</h3>
+        <label for="display-name">Patient display name <span class="optional">(optional)</span></label>
+        <input id="display-name" name="display_name" type="text" maxlength="80" autocomplete="off" value="{{ form_values.get('display_name', '') }}">
+        <label for="bed-id">Or assign an available bed <span class="optional">(optional)</span></label>
+        <select id="bed-id" name="bed_id">
+          <option value="">Use new bed above, or leave unassigned</option>
+          {% for bed in beds if not bed["patient_id"] %}
+          <option value="{{ bed['id'] }}" {% if form_values.get('bed_id') == bed['id'] | string %}selected{% endif %}>Room {{ bed["room_label"] }} · Bed {{ bed["bed_label"] }}</option>
+          {% endfor %}
+        </select>
+        <p class="field-hint">A patient uses the new bed above by default. Without a new bed, they remain unassigned.</p>
+        <button class="primary-button" type="submit">Save to roster</button>
       </form>
     </section>
   </main>

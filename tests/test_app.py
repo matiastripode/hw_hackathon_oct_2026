@@ -195,6 +195,202 @@ class AppTests(unittest.TestCase):
         self.client.post("/patients", data={"display_name": "Nora", "bed_id": str(bed_id)})
         self.assertIn("Room 103 · Bed B", self.client.get("/patients/3").text)
 
+    def test_optional_roster_fields_support_independent_room_and_bed_creation(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        roster = self.client.get("/").text
+        self.assertIn("Add to the roster", roster)
+        self.assertIn('action="/roster/add" method="post"', roster)
+        self.assertEqual(roster.count('action="/roster/add" method="post"'), 1)
+        self.assertNotIn('name="kind"', roster)
+        self.assertIn('name="label" type="text"', roster)
+        self.assertIn('name="display_name" type="text"', roster)
+        self.assertIn('name="room_id"', roster)
+
+        empty_room = self.client.post("/roster/add", data={"label": "103"})
+        self.assertEqual(empty_room.status_code, 200)
+        self.assertIn("No beds yet", empty_room.text)
+        room_and_bed = self.client.post("/roster/add", data={"label": "104", "bed_label": "A"})
+        self.assertEqual(room_and_bed.status_code, 200)
+        self.assertIn("Room 104 · Bed A", room_and_bed.text)
+        with open_database(database_path()) as connection:
+            room_id = connection.execute("SELECT id FROM room WHERE label = '104'").fetchone()[0]
+        another_bed = self.client.post("/roster/add", data={"room_id": str(room_id), "bed_label": "B"})
+        self.assertEqual(another_bed.status_code, 200)
+        self.assertIn("104 (2 beds)</option>", another_bed.text)
+        with open_database(database_path()) as connection:
+            self.assertEqual(connection.execute("SELECT count(*) FROM bed WHERE room_label = '103'").fetchone()[0], 0)
+            self.assertEqual(connection.execute("SELECT count(*) FROM bed WHERE room_label = '104'").fetchone()[0], 2)
+
+    def test_combined_form_rejects_invalid_beds_and_rooms(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        for data, status in (
+            ({"label": "103", "bed_label": "x" * 21}, 400),
+            ({"label": "101", "bed_label": "C"}, 409),
+            ({"room_id": "999", "bed_label": "A"}, 400),
+            ({"room_id": "invalid", "bed_label": "A"}, 400),
+            ({"room_id": "1", "bed_label": ""}, 400),
+            ({"room_id": "1", "bed_label": "A"}, 409),
+            ({"label": "103", "room_id": "1", "bed_label": "C"}, 400),
+            ({"bed_label": "C"}, 400),
+            ({"bed_id": "3"}, 400),
+            ({}, 400),
+        ):
+            with self.subTest(data=data):
+                response = self.client.post("/roster/add", data=data)
+                self.assertEqual(response.status_code, status)
+                self.assertIn('role="alert"', response.text)
+        with open_database(database_path()) as connection:
+            self.assertIsNone(connection.execute("SELECT id FROM room WHERE label = '103'").fetchone())
+            self.assertIsNone(connection.execute("SELECT id FROM bed WHERE room_label = '101' AND bed_label = 'C'").fetchone())
+
+    def test_one_roster_form_adds_patients_with_any_placement(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        with open_database(database_path()) as connection:
+            room_id = connection.execute("SELECT id FROM room WHERE label = '102'").fetchone()[0]
+            empty_bed = connection.execute("SELECT id FROM bed WHERE room_label = '102'").fetchone()[0]
+        for name, data, location in (
+            ("Nora", {"bed_id": ""}, "Unassigned"),
+            ("Sam", {"bed_id": str(empty_bed)}, "Room 102 · Bed A"),
+            ("Pat", {"room_id": str(room_id), "bed_label": "B"}, "Room 102 · Bed B"),
+            ("Dee", {"label": "103", "bed_label": "A"}, "Room 103 · Bed A"),
+        ):
+            with self.subTest(name=name):
+                response = self.client.post(
+                    "/roster/add", data={"display_name": name, **data}, follow_redirects=False
+                )
+                self.assertEqual(response.status_code, 303)
+                self.assertIn(location, self.client.get(response.headers["location"]).text)
+        with open_database(database_path()) as connection:
+            self.assertEqual(connection.execute("SELECT count(*) FROM patient").fetchone()[0], 6)
+            self.assertEqual(connection.execute("SELECT count(*) FROM bed WHERE room_label = '103'").fetchone()[0], 1)
+        room_and_patient = self.client.post(
+            "/roster/add", data={"label": "104", "display_name": "Lee"}, follow_redirects=False
+        )
+        self.assertEqual(room_and_patient.status_code, 303)
+        self.assertIn("Unassigned", self.client.get(room_and_patient.headers["location"]).text)
+        with open_database(database_path()) as connection:
+            self.assertEqual(connection.execute("SELECT count(*) FROM bed WHERE room_label = '104'").fetchone()[0], 0)
+
+    def test_patient_can_use_available_bed_while_creating_another_empty_bed(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        with open_database(database_path()) as connection:
+            empty_bed = connection.execute("SELECT id FROM bed WHERE room_label = '102'").fetchone()[0]
+        response = self.client.post(
+            "/roster/add",
+            data={"label": "103", "bed_label": "A", "display_name": "Nora", "bed_id": str(empty_bed)},
+            follow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 303)
+        self.assertIn("Room 102 · Bed A", self.client.get(response.headers["location"]).text)
+        with open_database(database_path()) as connection:
+            self.assertEqual(connection.execute("SELECT count(*) FROM bed WHERE room_label = '103'").fetchone()[0], 1)
+            self.assertIsNone(connection.execute(
+                "SELECT patient.id FROM patient JOIN bed ON bed.id = patient.bed_id WHERE bed.room_label = '103'"
+            ).fetchone())
+
+    def test_one_roster_form_rejects_invalid_patient_or_room_without_partial_records(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        for data, status in (
+            ({"display_name": " ", "label": "103", "bed_label": "A"}, 400),
+            ({"display_name": "Nora", "label": "101", "bed_label": "C"}, 409),
+            ({"display_name": "Nora", "room_id": "999", "bed_label": "A"}, 400),
+            ({"display_name": "Nora", "label": "103", "bed_label": "A", "bed_id": "999"}, 400),
+            ({"display_name": "Nora", "label": "103", "bed_label": "A", "bed_id": "1"}, 409),
+        ):
+            with self.subTest(data=data):
+                self.assertEqual(self.client.post("/roster/add", data=data).status_code, status)
+        with open_database(database_path()) as connection:
+            self.assertIsNone(connection.execute("SELECT id FROM room WHERE label = '103'").fetchone())
+            self.assertIsNone(connection.execute("SELECT id FROM patient WHERE display_name = 'Nora'").fetchone())
+        response = self.client.post("/roster/add", data={"label": "103", "room_id": "1", "display_name": "Nora"})
+        self.assertIn('value="103"', response.text)
+        self.assertIn('value="Nora"', response.text)
+
+    def test_one_roster_form_requires_login(self):
+        response = self.client.post(
+            "/roster/add", data={"label": "103"}, follow_redirects=False
+        )
+        self.assertEqual(response.headers["location"], "/login")
+        with open_database(database_path()) as connection:
+            self.assertIsNone(connection.execute("SELECT id FROM room WHERE label = '103'").fetchone())
+
+    def test_room_dropdown_counts_beds_and_patient_can_create_one(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        roster = self.client.get("/").text
+        self.assertIn("101 (2 beds)</option>", roster)
+        self.assertIn("102 (1 bed)</option>", roster)
+        with open_database(database_path()) as connection:
+            room_id = connection.execute("SELECT id FROM room WHERE label = '102'").fetchone()[0]
+        created = self.client.post(
+            "/patients",
+            data={"display_name": "Nora", "new_room_id": str(room_id), "new_bed_label": "B"},
+            follow_redirects=False,
+        )
+        self.assertEqual(created.status_code, 303)
+        self.assertIn("Room 102 · Bed B", self.client.get(created.headers["location"]).text)
+        self.assertIn("102 (2 beds)</option>", self.client.get("/").text)
+
+    def test_new_bed_assignment_rejects_invalid_choices_without_creating_patient(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        with open_database(database_path()) as connection:
+            room_id = connection.execute("SELECT id FROM room WHERE label = '102'").fetchone()[0]
+        for data, status in (
+            ({"new_room_id": str(room_id), "new_bed_label": ""}, 400),
+            ({"new_room_id": "999", "new_bed_label": "B"}, 400),
+            ({"new_room_id": "not-a-room", "new_bed_label": "B"}, 400),
+            ({"new_bed_label": "B"}, 400),
+            ({"new_room_id": str(room_id), "new_bed_label": "A"}, 409),
+            ({"bed_id": "3", "new_room_id": str(room_id), "new_bed_label": "B"}, 400),
+        ):
+            with self.subTest(data=data):
+                response = self.client.post("/patients", data={"display_name": "Nora", **data})
+                self.assertEqual(response.status_code, status)
+        with open_database(database_path()) as connection:
+            self.assertEqual(connection.execute("SELECT count(*) FROM patient WHERE display_name = 'Nora'").fetchone()[0], 0)
+            self.assertEqual(connection.execute("SELECT count(*) FROM bed WHERE room_label = '102'").fetchone()[0], 1)
+
+    def test_rooms_and_unassigned_patients_paginate_independently(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        with open_database(database_path()) as connection:
+            connection.executemany("INSERT INTO room (label) VALUES (?)", [(str(n),) for n in range(103, 107)])
+            connection.executemany("INSERT INTO patient (display_name) VALUES (?)", [(f"Demo {n}",) for n in range(5)])
+        first = self.client.get("/").text
+        self.assertEqual(first.count('class="room-group room-'), 3)
+        self.assertEqual(first.count("No bed assigned</p>"), 3)
+        self.assertIn("Rooms page 1 of 2", first)
+        self.assertIn("Patients page 1 of 2", first)
+        self.assertIn('href="/?room_page=2&amp;patient_page=1"', first)
+        self.assertIn('href="/?room_page=1&amp;patient_page=2"', first)
+        self.assertIn("106 (0 beds)</option>", first)
+        second = self.client.get("/?room_page=2&patient_page=2").text
+        self.assertEqual(second.count('class="room-group room-'), 3)
+        self.assertEqual(second.count("No bed assigned</p>"), 2)
+        self.assertIn("<h3>Room 106</h3>", second)
+        self.assertNotIn("<h3>Room 101</h3>", second)
+        self.assertIn("Demo 4", second)
+        self.assertNotIn("Demo 0</h3>", second)
+        self.assertIn('href="/?room_page=1&amp;patient_page=2"', second)
+        self.assertIn('href="/?room_page=2&amp;patient_page=1"', second)
+        self.assertIn("Rooms page 2 of 2", self.client.get("/?room_page=999").text)
+
+    def test_beds_within_a_room_show_three_cards_per_page(self):
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        with open_database(database_path()) as connection:
+            room_id = connection.execute("SELECT id FROM room WHERE label = '101'").fetchone()[0]
+            connection.executemany(
+                "INSERT INTO bed (room_label, bed_label) VALUES ('101', ?)",
+                [("C",), ("D",), ("E",)],
+            )
+        first = self.client.get("/").text
+        self.assertIn("101 (5 beds)</option>", first)
+        self.assertIn("Beds page 1 of 2", first)
+        self.assertIn(f"bed_page_{room_id}=2", first)
+        self.assertNotIn("Room 101 · Bed E</p>", first)
+        second = self.client.get(f"/?bed_page_{room_id}=2").text
+        self.assertIn("Room 101 · Bed E</p>", second)
+        self.assertNotIn("Room 101 · Bed A</p>", second)
+        self.assertIn("Beds page 2 of 2", second)
+
     def test_room_highlights_reflect_full_partial_free_and_unconfigured_states(self):
         self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
         roster = self.client.get("/").text

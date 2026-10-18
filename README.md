@@ -32,13 +32,19 @@ cookie expires after 24 hours, and sessions also end on app restart unless
 environment before launch.
 
 After sign-in, the roster shows occupied and empty beds, grouped by room.
+Rooms, beds within each room, and unassigned patients show up to three items
+per page with separate navigation. Room dropdowns always include every room
+and show its current bed count, even when that room is on another roster page.
 Room headers show **Occupied** when all beds are taken, **Free** when all are
 empty, **Partially occupied** when mixed and **No beds** for an empty room.
-Create an empty room with **Add room**, then choose it in **Add bed** to create
-its beds. Select a patient to see their care board or add a fictional patient
-from the roster. A patient may be unassigned or moved to an available bed from
-their board; occupied beds cannot be taken without first unassigning the
-current patient. Care entries stay with the patient when their bed changes.
+Use **Add to the roster** to enter any combination of a new room, bed and
+fictional patient. Leave fields blank to add just one or two: an empty room
+needs only a room label; a new bed needs a new room label or an existing room
+selection; a patient may remain unassigned, take an available bed, or be
+assigned the new bed entered in the same form. A patient can be moved to an
+available bed from their care board; occupied beds cannot be taken without
+first unassigning the current patient. Care entries stay with the patient
+when their bed changes.
 On a patient board, expand **Log symptom** or **Add task** to record a fictional
 update. Common symptom and task choices fill an editable title only; details,
 priority and status are set by the caregiver before saving. Choosing a starter
