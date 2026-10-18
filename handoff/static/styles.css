@@ -91,3 +91,103 @@ main > section { margin-bottom: 2rem; }
   .intro { display: block; }
   .intro p { margin-top: .65rem; }
 }
+
+/* Sign-in landing page, adapted from the matthew branch without changing the board. */
+.landing {
+  --paper: #f1eee6;
+  --white: #fffdf8;
+  --ink: #1b3432;
+  --muted: #62706c;
+  --forest: #1c4745;
+  --sea: #2c7569;
+  --line: #d9dfd6;
+  --rust: #a84f3d;
+  --amber: #e7b677;
+  color: var(--ink);
+  background: radial-gradient(circle at 7% 7%, #fdf8e9 0, transparent 28rem),
+    repeating-linear-gradient(110deg, transparent 0 62px, #dfdfd248 63px, transparent 64px),
+    var(--paper);
+  font: 15px/1.55 "Trebuchet MS", Verdana, sans-serif;
+}
+.landing button, .landing input, .landing select { font: inherit; }
+.landing-wrap { width: min(1280px, calc(100% - 64px)); margin-inline: auto; }
+.landing .disclaimer {
+  padding: 7px 16px; background: #dfe9db; color: #224d42;
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+}
+.landing-header { padding: 0; background: var(--forest); color: #f7f9ed; }
+.landing-header .landing-wrap {
+  min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.landing .brand { margin: 0; }
+.landing .brand-name { color: #fff; }
+.landing .brand:hover .brand-name { color: #bee9dc; }
+.landing-caption { font-size: 10px; letter-spacing: .16em; color: #c2d9ce; }
+.landing-layout {
+  min-height: calc(100vh - 200px); display: grid;
+  grid-template-columns: 1.15fr .85fr; align-items: center;
+  gap: clamp(40px, 10vw, 150px); padding-block: 80px 100px;
+}
+.landing-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .19em; color: var(--sea); }
+.landing-intro h1, .landing .login-card h2 {
+  font-family: Georgia, "Times New Roman", serif; font-weight: 400; letter-spacing: -.035em;
+}
+.landing-intro h1 { font-size: clamp(47px, 5.3vw, 82px); line-height: 1.04; margin: 27px 0 26px; }
+.landing-intro h1 i { color: var(--sea); font-weight: 400; }
+.landing-intro > p { font-size: 18px; line-height: 1.65; color: #485a55; max-width: 530px; }
+.landing-rule { width: 66px; height: 3px; background: var(--rust); margin: 44px 0 24px; }
+.landing-intro .landing-small-note { font-size: 12px; color: var(--muted); max-width: 350px; }
+.landing .login-card {
+  max-width: none; margin: 0; padding: clamp(26px, 4vw, 52px);
+  background: var(--white); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 20px 65px #3b514020;
+}
+.landing-card-topline {
+  display: flex; justify-content: space-between; gap: 12px; margin-bottom: 39px;
+  color: var(--sea); font-size: 10px; font-weight: 700; letter-spacing: .15em;
+}
+.landing-card-topline span:last-child { color: var(--rust); }
+.landing .login-card h2 { font-size: 38px; line-height: 1.1; margin-bottom: 8px; }
+.landing .demo-note { margin: 0; color: var(--muted); font-size: 13px; }
+.landing .landing-login-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+.landing .login-card form { margin-top: 31px; }
+.landing .login-card label { margin: 15px 0 8px; color: #36524d; font-size: 13px; font-weight: 700; }
+.landing-field-hint { color: #7d9187; font-weight: 400; }
+.landing .login-card input, .landing .login-card select {
+  min-height: 43px; padding: 10px 12px; border: 1px solid #cbd6cd;
+  border-radius: 6px; color: var(--ink); background: #fff;
+}
+.landing .field-hint { color: var(--muted); font-size: 11px; }
+.landing .primary-button {
+  display: flex; justify-content: space-between; align-items: center;
+  min-height: 48px; padding: 10px 15px; margin-top: 22px;
+  border-radius: 6px; background: var(--rust); text-align: left; font-size: 14px;
+}
+.landing .primary-button:hover { background: #8f3e30; }
+.landing .primary-button:disabled { background: #a7b9b0; }
+.landing-footer {
+  display: flex; justify-content: space-between; gap: 20px;
+  padding-block: 32px 46px; border-top: 1px solid #d3d8d0;
+  color: #677673; font-size: 11px;
+}
+@keyframes landing-arrive {
+  from { opacity: 0; transform: translateY(13px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.landing-intro, .landing .login-card { animation: landing-arrive .55s ease both; }
+.landing .login-card { animation-delay: .12s; }
+@media (max-width: 760px) {
+  .landing-wrap { width: min(100% - 32px, 580px); }
+  .landing-header .landing-wrap { min-height: 66px; }
+  .landing-caption { display: none; }
+  .landing-layout { grid-template-columns: 1fr; gap: 30px; padding-block: 45px 55px; }
+  .landing-intro h1 { font-size: clamp(42px, 10vw, 62px); }
+  .landing-intro > p { font-size: 15px; }
+  .landing-rule { margin: 25px 0 16px; }
+  .landing-card-topline { margin-bottom: 25px; }
+  .landing-footer { flex-direction: column; gap: 6px; padding-block: 25px; }
+  .landing .login-card input, .landing .login-card select { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-intro, .landing .login-card { animation: none; }
+}

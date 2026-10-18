@@ -37,6 +37,18 @@ class AppTests(unittest.TestCase):
         self.assertIn("/static/login.js", login.text)
         self.assertIn("Prototype · fictional data only · not medical advice", login.text)
 
+    def test_landing_page_keeps_main_brand_and_login_contract(self):
+        login = self.client.get("/login").text
+        self.assertIn("Nothing important", login)
+        self.assertIn("gets lost", login)
+        self.assertIn('class="landing-wrap landing-layout"', login)
+        self.assertIn('src="http://testserver/static/logo.svg"', login)
+        self.assertNotIn("SHIFT <em>NOTES</em>", login)
+        self.assertIn('<option value="Maria"', login)
+        self.assertIn('name="password" type="password" minlength="6" required', login)
+        self.assertIn("Choose a caregiver", login)
+        self.assertIn("Start your shift.", login)
+
     def test_seeded_caregiver_can_sign_in_and_see_dashboard(self):
         response = self.client.post("/login", data={"caregiver": "Maria", "password": "anything"}, follow_redirects=False)
         self.assertEqual(response.status_code, 303)

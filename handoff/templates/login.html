@@ -8,38 +8,49 @@
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/logo.svg') }}">
   <script src="{{ url_for('static', path='/login.js') }}" defer></script>
 </head>
-<body>
+<body class="landing">
   <div class="disclaimer" role="note">Prototype · fictional data only · not medical advice</div>
-  <header>
-    <div class="wrap">
+  <header class="landing-header">
+    <div class="landing-wrap">
       <a class="brand" href="/" aria-label="Caregiver Handoff Board home">
         <img src="{{ url_for('static', path='/logo.svg') }}" alt="" width="48" height="48">
         <span class="brand-name">Caregiver<strong>Handoff Board</strong></span>
       </a>
-      <p class="eyebrow">Offline demo</p>
-      <h1>Welcome to the care board</h1>
-      <p>Choose who you’re signing in as to see the patient roster.</p>
+      <span class="landing-caption">THE OFFLINE CARE BOARD</span>
     </div>
   </header>
-  <main class="wrap">
+  <main class="landing-wrap landing-layout">
+    <section class="landing-intro" aria-labelledby="landing-title">
+      <span class="landing-eyebrow">01 / A BETTER CHANGE OF SHIFT</span>
+      <h1 id="landing-title">Nothing important<br><i>gets lost</i> between shifts.</h1>
+      <p>One calm place for the little details: what happened, what changed, and what needs attention next.</p>
+      <div class="landing-rule"></div>
+      <p class="landing-small-note">Built for an offline, two-device demo. This login is not a security feature.</p>
+    </section>
     <section class="login-card" aria-labelledby="login-title">
-      <h2 id="login-title">Sign in for the demo</h2>
-      <p class="demo-note">Demo login — no real authentication. Use fictional names only.</p>
+      <div class="landing-card-topline"><span>CAREGIVER ACCESS</span><span>DEMO MODE</span></div>
+      <h2 id="login-title">Start your shift.</h2>
+      <p class="demo-note">Choose a caregiver to see the patient roster.</p>
+      <p class="landing-login-note">Demo login — no real authentication. Use fictional names only.</p>
       {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
       <form action="/login" method="post">
-        <label for="caregiver">Choose a caregiver</label>
+        <label for="caregiver">Caregiver</label>
         <select id="caregiver" name="caregiver" required>
-          <option value="">Select a caregiver</option>
+          <option value="">Choose a caregiver</option>
           {% for person in caregivers %}
           <option value="{{ person['name'] }}" {% if selected_caregiver == person['name'] %}selected{% endif %}>{{ person["name"] }}</option>
           {% endfor %}
         </select>
-        <label for="password">Demo password</label>
+        <label for="password">Demo password <span class="landing-field-hint">(at least 6 characters)</span></label>
         <input id="password" name="password" type="password" minlength="6" required autocomplete="off" placeholder="At least 6 characters">
         <p class="field-hint">Any password of at least 6 characters works. Only its length is checked; it is never stored.</p>
-        <button class="primary-button" id="open-board" type="submit">Open care board</button>
+        <button class="primary-button" id="open-board" type="submit">Open care board <span aria-hidden="true">&rarr;</span></button>
       </form>
     </section>
   </main>
+  <footer class="landing-wrap landing-footer">
+    <span>Caregiver Handoff Board / Offline demo</span>
+    <span>Private, local-first prototype. Never enter real patient information.</span>
+  </footer>
 </body>
 </html>
