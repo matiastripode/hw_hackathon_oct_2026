@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rooms and beds · Caregiver Handoff Board</title>
   <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/logo.svg') }}">
 </head>
 <body>
   <div class="disclaimer" role="note">Prototype · fictional data only · not medical advice</div>
   <header>
     <div class="wrap header-row">
       <div>
-        <p class="eyebrow">Offline caregiver handoff</p>
+        <a class="brand" href="/" aria-label="Caregiver Handoff Board home">
+          <img src="{{ url_for('static', path='/logo.svg') }}" alt="" width="48" height="48">
+          <span class="brand-name">Caregiver<strong>Handoff Board</strong></span>
+        </a>
+        <p class="eyebrow">Offline demo</p>
         <h1>Rooms and beds</h1>
         <p>Choose a fictional patient before reviewing care updates.</p>
       </div>

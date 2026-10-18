@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from xml.etree import ElementTree
 
 from fastapi.testclient import TestClient
 
@@ -306,3 +307,21 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").json(), {"status": "ok"})
         self.assertEqual(self.client.get("/static/styles.css").status_code, 200)
         self.assertEqual(self.client.get("/docs").status_code, 404)
+
+    def test_brand_mark_and_favicon_are_local_on_every_page(self):
+        pages = [self.client.get("/login").text]
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        pages.extend((self.client.get("/").text, self.client.get("/patients/1").text))
+        for page in pages:
+            with self.subTest(page=page.split("<title>")[1].split("</title>")[0]):
+                self.assertIn('href="http://testserver/static/logo.svg"', page)
+                self.assertIn('src="http://testserver/static/logo.svg"', page)
+                self.assertIn('class="brand"', page)
+                self.assertIn('<span class="brand-name">Caregiver<strong>Handoff Board</strong></span>', page)
+        logo = self.client.get("/static/logo.svg")
+        self.assertEqual(logo.status_code, 200)
+        self.assertIn("image/svg+xml", logo.headers["content-type"])
+        svg = ElementTree.fromstring(logo.content)
+        self.assertEqual(svg.tag, "{http://www.w3.org/2000/svg}svg")
+        self.assertEqual(svg.findall("{http://www.w3.org/2000/svg}rect"), [])
+        self.assertIsNotNone(svg.find("{http://www.w3.org/2000/svg}path[@id='heart-shape']"))

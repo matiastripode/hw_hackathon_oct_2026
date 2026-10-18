@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Caregiver Handoff Board</title>
+  <path id="heart-shape" d="M32 58C23 51 5 39 5 24 5 14 11.6 7 20.3 7 25.8 7 29.8 9.9 32 14 34.2 9.9 38.2 7 43.7 7 52.4 7 59 14 59 24 59 39 41 51 32 58Z" fill="#d8f4e8" stroke="#2b8772" stroke-width="2.5"/>
+  <path d="M17 19h29m0 0-7-7m7 7-7 7" fill="none" stroke="#176657" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5"/>
+  <circle cx="24" cy="34" r="3.7" fill="#176657"/>
+  <path d="M16 30v17m0-8h33v8M30 33h11a8 8 0 0 1 8 8" fill="none" stroke="#176657" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5"/>
+</svg>

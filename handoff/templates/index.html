@@ -30,6 +30,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Caregiver Handoff Board</title>
   <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/logo.svg') }}">
   <script src="{{ url_for('static', path='/entry-presets.js') }}" defer></script>
 </head>
 <body>
@@ -37,7 +38,11 @@
   <header>
     <div class="wrap header-row">
       <div>
-        <p class="eyebrow">Offline caregiver handoff</p>
+        <a class="brand" href="/" aria-label="Caregiver Handoff Board home">
+          <img src="{{ url_for('static', path='/logo.svg') }}" alt="" width="48" height="48">
+          <span class="brand-name">Caregiver<strong>Handoff Board</strong></span>
+        </a>
+        <p class="eyebrow">Offline demo</p>
         <h1>{{ patient["display_name"] }}’s care board</h1>
         <p class="patient-location">Demo patient #{{ patient["id"] }} · {% if patient["bed_id"] %}Room {{ patient["room_label"] }} · Bed {{ patient["bed_label"] }}{% else %}Unassigned{% endif %}</p>
         <p>A quiet place to see what needs attention before the next shift.</p>

@@ -78,3 +78,25 @@ Do not run this against a database containing information you want to keep.
 .venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python -m unittest discover -s tests -v
 ```
+
+## Raspberry Pi auto-start setup
+
+Copy the project to the Pi without the macOS `.venv`, `.git` or local `data`
+directory. Run this as the normal Pi user from the project folder while the Pi
+has internet access for the one-time dependency installation:
+
+```sh
+./deploy/setup-pi.sh --check
+./deploy/setup-pi.sh --install
+```
+
+The installer creates a Linux `.venv`, a private session secret in the ignored
+`data/` directory and a `caregiver-handoff.service` systemd unit. It starts the
+app on `127.0.0.1:3000` and checks `/health`. It does **not** install or change
+nginx: if port 80 does not already forward to the app, inspect nginx before
+editing its configuration. It refuses to overwrite a different existing
+systemd service. Keep `data/` when updating the app so its SQLite database and
+session secret persist. Never copy real patient information into this demo.
+For diagnostics on the Pi, use `./deploy/setup-pi.sh --check`,
+`systemctl status caregiver-handoff.service --no-pager` and
+`journalctl -u caregiver-handoff.service -n 50 --no-pager`.

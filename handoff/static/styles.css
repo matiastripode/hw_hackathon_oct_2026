@@ -9,6 +9,12 @@ body { margin: 0; }
 .wrap { width: min(100% - 2rem, 850px); margin: 0 auto; }
 .disclaimer { padding: .55rem 1rem; text-align: center; background: #fff0cf; color: #674400; font-weight: 650; font-size: .9rem; }
 header { padding: 2.8rem 0 3rem; background: #184e48; color: white; }
+.brand { display: inline-flex; align-items: center; gap: .75rem; margin-bottom: 1.4rem; color: white; text-decoration: none; }
+.brand img { flex: none; }
+.brand-name { font-size: .92rem; line-height: 1.15; font-weight: 650; }
+.brand-name strong { display: block; font-size: 1.27rem; letter-spacing: -.02em; }
+.brand:hover .brand-name { color: #bee9dc; }
+.brand:focus-visible { outline: 3px solid #fff0cf; outline-offset: 4px; border-radius: 4px; }
 .eyebrow { margin: 0 0 .5rem; text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; font-weight: 700; color: #bee9dc; }
 h1 { margin: 0; font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; }
 header p:last-child { margin-bottom: 0; color: #d7ebe5; }
