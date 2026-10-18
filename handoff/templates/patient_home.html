@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient page · Caregiver Handoff Board</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/logo.svg') }}">
+  {% if called %}<script src="{{ url_for('static', path='/patient-video.js') }}" defer></script>{% endif %}
+</head>
+<body class="patient-page">
+  <div class="disclaimer" role="note">Prototype · fictional data only · not medical advice</div>
+  <header>
+    <div class="wrap header-row">
+      <a class="brand" href="/patient" aria-label="Caregiver Handoff Board patient home">
+        <img src="{{ url_for('static', path='/logo.svg') }}" alt="" width="48" height="48">
+        <span class="brand-name">Caregiver<strong>Handoff Board</strong></span>
+      </a>
+      <form class="account" action="/patient/logout" method="post"><button type="submit">Sign out</button></form>
+    </div>
+  </header>
+  <main class="wrap patient-main">
+    <p class="eyebrow">PATIENT SPACE / DEMO</p>
+    <h1>Hi, {{ patient["display_name"] }}.</h1>
+    <p class="patient-lead">Need someone to check in? Let the care team know with one tap.</p>
+    <section class="call-card" aria-labelledby="call-title">
+      <span class="call-icon" aria-hidden="true">+</span>
+      <h2 id="call-title">Call the nurse over</h2>
+      <p>This adds a request to your fictional care board. It does not contact a real nurse or emergency service.</p>
+      <form action="/patient/call" method="post">
+        <button class="primary-button" type="submit">Call the nurse over <span aria-hidden="true">&rarr;</span></button>
+      </form>
+    </section>
+    {% if called %}
+    <dialog class="theater-dialog" id="video-dialog" aria-labelledby="theater-title" data-auto-open="{{ 'true' if open_video else 'false' }}">
+      <div class="theater-heading">
+        <div>
+          <p class="eyebrow">PATIENT SPACE / VIDEO</p>
+          <h2 id="theater-title">Your nurse is on the way.</h2>
+        </div>
+        <button type="button" class="theater-close" id="close-video" aria-label="Close video">Close <span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="video-embed" id="video-embed"></div>
+      <p class="theater-note">Demo only: this adds a request to the fictional care board. No real nurse has been dispatched.</p>
+      <p class="theater-note">Tap the video to play with sound. If X blocks it, <a href="https://x.com/unusual_whales/status/2110910422358561071?s=20" target="_blank" rel="noopener noreferrer">open the video on X</a>.</p>
+    </dialog>
+    <template id="video-template">
+      <blockquote class="twitter-tweet" data-media-max-width="560">
+        <a href="https://x.com/unusual_whales/status/2110910422358561071?s=20">Watch the video on X</a>
+      </blockquote>
+    </template>
+    {% endif %}
+  </main>
+</body>
+</html>

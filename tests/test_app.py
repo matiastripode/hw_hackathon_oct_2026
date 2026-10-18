@@ -37,6 +37,89 @@ class AppTests(unittest.TestCase):
         self.assertIn("/static/login.js", login.text)
         self.assertIn("Prototype · fictional data only · not medical advice", login.text)
 
+    def test_patient_sign_in_and_call_shows_video_and_adds_caregiver_request(self):
+        self.assertEqual(self.client.get("/patient", follow_redirects=False).headers["location"], "/patient/login")
+        self.assertEqual(self.client.post("/patient/call", follow_redirects=False).headers["location"], "/patient/login")
+        login = self.client.get("/patient/login")
+        self.assertIn("James", login.text)
+        self.assertIn("Lena", login.text)
+        self.assertIn('href="/login"', login.text)
+        self.assertIn('href="/patient/login"', self.client.get("/login").text)
+        response = self.client.post(
+            "/patient/login", data={"patient_id": "1", "password": "sixchars"}, follow_redirects=False
+        )
+        self.assertEqual(response.headers["location"], "/patient")
+        home = self.client.get("/patient").text
+        self.assertIn("Hi, James.", home)
+        self.assertIn('action="/patient/call"', home)
+        self.assertNotIn('id="video-dialog"', home)
+        self.assertEqual(self.client.get("/", follow_redirects=False).headers["location"], "/login")
+        self.assertEqual(self.client.get("/patients/1", follow_redirects=False).headers["location"], "/login")
+        response = self.client.post("/patient/call", follow_redirects=False)
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.headers["location"], "/patient")
+        called = self.client.get("/patient").text
+        self.assertIn("Your nurse is on the way.", called)
+        self.assertIn("No real nurse has been dispatched.", called)
+        self.assertNotIn('class="call-result"', called)
+        self.assertNotIn("REQUEST ADDED", called)
+        self.assertNotIn("Watch video in theater mode", called)
+        self.assertIn('/static/patient-video.js', called)
+        self.assertIn('id="video-dialog"', called)
+        self.assertIn('data-auto-open="true"', called)
+        self.assertIn('id="close-video"', called)
+        self.assertIn('class="twitter-tweet"', called)
+        self.assertNotIn("platform.twitter.com/embed/Video.html", called)
+        self.assertIn("https://x.com/unusual_whales/status/2110910422358561071?s=20", called)
+        self.assertIn('data-auto-open="false"', self.client.get("/patient").text)
+        video_script = self.client.get("/static/patient-video.js")
+        self.assertEqual(video_script.status_code, 200)
+        self.assertIn("dialog.showModal()", video_script.text)
+        self.assertIn("dialog.close()", video_script.text)
+        self.assertNotIn('#open-video', video_script.text)
+        self.assertIn("https://platform.twitter.com/widgets.js", video_script.text)
+        self.client.post("/patient/call", follow_redirects=False)
+        self.assertIn('data-auto-open="true"', self.client.get("/patient").text)
+        with open_database(database_path()) as connection:
+            requests = connection.execute(
+                "SELECT patient_id, type, severity, status FROM entry WHERE title = 'Patient requested a nurse'"
+            ).fetchall()
+            self.assertEqual([tuple(row) for row in requests], [(1, "concern", "high", "open")])
+        with TestClient(app) as nurse_device:
+            nurse_device.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+            self.assertIn("Patient requested a nurse", nurse_device.get("/patients/1").text)
+            self.assertNotIn("Patient requested a nurse", nurse_device.get("/patients/2").text)
+            self.assertIn("Hi, James.", self.client.get("/patient").text)
+        self.client.post("/patient/logout")
+        self.assertEqual(self.client.get("/patient", follow_redirects=False).headers["location"], "/patient/login")
+        self.assertEqual(self.client.post("/patient/call", follow_redirects=False).headers["location"], "/patient/login")
+        self.client.post("/login", data={"caregiver": "Maria", "password": "sixchars"})
+        self.assertIn("Patient requested a nurse", self.client.get("/patients/1").text)
+        self.assertNotIn("Patient requested a nurse", self.client.get("/patients/2").text)
+        self.assertEqual(self.client.get("/patient", follow_redirects=False).headers["location"], "/patient/login")
+
+    def test_patient_login_rejects_unknown_inactive_and_short_password(self):
+        with open_database(database_path()) as connection:
+            connection.execute("UPDATE patient SET active = 0 WHERE id = 2")
+        self.assertNotIn('value="2"', self.client.get("/patient/login").text)
+        for data in (
+            {"patient_id": "1", "password": "short"},
+            {"patient_id": "2", "password": "sixchars"},
+            {"patient_id": "999", "password": "sixchars"},
+            {"patient_id": "oops", "password": "sixchars"},
+        ):
+            with self.subTest(data=data):
+                self.assertEqual(self.client.post("/patient/login", data=data).status_code, 400)
+                self.assertEqual(self.client.get("/patient", follow_redirects=False).headers["location"], "/patient/login")
+        self.client.post("/patient/login", data={"patient_id": "1", "password": "sixchars"})
+        with open_database(database_path()) as connection:
+            connection.execute("UPDATE patient SET active = 0 WHERE id = 1")
+        self.assertEqual(self.client.post("/patient/call", follow_redirects=False).headers["location"], "/patient/login")
+        with open_database(database_path()) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT count(*) FROM entry WHERE title = 'Patient requested a nurse'"
+            ).fetchone()[0], 0)
+
     def test_landing_page_keeps_main_brand_and_login_contract(self):
         login = self.client.get("/login").text
         self.assertIn("Nothing important", login)

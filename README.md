@@ -21,8 +21,9 @@ python3 -m venv .venv
 
 `start.sh` uses `.venv/bin/python` if present, otherwise `python3`. It listens on
 `127.0.0.1:${PORT:-3000}` by default for nginx to proxy over plain HTTP. Set
-`HOST=0.0.0.0` if direct access on the local network is needed. The running app
-does not call outside services or load remote assets. Visit
+`HOST=0.0.0.0` if direct access on the local network is needed. The care board
+does not call outside services; the optional patient video embed loads from X
+only after the patient taps the call button. Visit
 `http://127.0.0.1:3000/` locally, or the Pi's nginx address from another device.
 Choose a caregiver and enter any demo password of at least 6 characters. Only
 its length is checked; the password is not stored. Sign out from the dashboard
@@ -30,6 +31,18 @@ to switch caregivers. This is not real authentication. The signed session
 cookie expires after 24 hours, and sessions also end on app restart unless
 `HANDOFF_SESSION_SECRET` is set to a private, stable value in the app's
 environment before launch.
+
+Patients can visit `/patient/login` (also linked from caregiver sign-in),
+select an active fictional patient and use any demo password of at least six
+characters. The patient page has a **Call the nurse over** button. Pressing it
+adds one open, high-priority request to that patient's caregiver board and
+opens the official X tweet embed in a theater-style dialog, with a direct link
+if X blocks embedding. Closing the dialog stops the embed; pressing the call
+button again reopens it without creating a duplicate open request.
+Playing the video requires internet access; it is not available offline.
+X and browser autoplay restrictions mean sound-on autoplay cannot be guaranteed.
+This is a demo board entry, not a real notification, pager or emergency
+service. Patient sessions cannot access caregiver pages.
 
 After sign-in, the roster shows occupied and empty beds, grouped by room.
 Rooms, beds within each room, and unassigned patients show up to three items

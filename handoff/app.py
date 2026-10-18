@@ -79,10 +79,101 @@ def login(request: Request, caregiver: str = Form(""), password: str = Form(""))
     return RedirectResponse("/", status_code=303)
 
 
+def render_patient_login(request, error=None, selected_patient=""):
+    with open_database(database_path()) as connection:
+        patients = connection.execute(
+            "SELECT id, display_name FROM patient WHERE active = 1 ORDER BY display_name, id"
+        ).fetchall()
+    return templates.TemplateResponse(
+        request, "patient_login.html",
+        {"patients": patients, "error": error, "selected_patient": selected_patient},
+        status_code=400 if error else 200,
+    )
+
+
+@app.get("/patient/login", response_class=HTMLResponse)
+def patient_login_page(request: Request):
+    if request.session.get("patient_id"):
+        return RedirectResponse("/patient", status_code=303)
+    return render_patient_login(request)
+
+
+@app.post("/patient/login")
+def patient_login(request: Request, patient_id: str = Form(""), password: str = Form("")):
+    error = "Please choose a patient and enter a demo password of at least 6 characters."
+    if len(password) < 6:
+        return render_patient_login(request, error, patient_id)
+    with open_database(database_path()) as connection:
+        patient = connection.execute(
+            "SELECT id FROM patient WHERE id = ? AND active = 1", (patient_id,)
+        ).fetchone()
+    if patient is None:
+        return render_patient_login(request, error, patient_id)
+    request.session.clear()
+    request.session["patient_id"] = patient["id"]
+    return RedirectResponse("/patient", status_code=303)
+
+
+@app.get("/patient", response_class=HTMLResponse)
+def patient_home(request: Request):
+    patient_id = request.session.get("patient_id")
+    if not patient_id:
+        return RedirectResponse("/patient/login", status_code=303)
+    with open_database(database_path()) as connection:
+        patient = connection.execute(
+            "SELECT id, display_name FROM patient WHERE id = ? AND active = 1", (patient_id,)
+        ).fetchone()
+    if patient is None:
+        request.session.clear()
+        return RedirectResponse("/patient/login", status_code=303)
+    return templates.TemplateResponse(
+        request, "patient_home.html",
+        {
+            "patient": patient,
+            "called": request.session.get("call_video", False),
+            "open_video": request.session.pop("open_video", False),
+        },
+    )
+
+
+@app.post("/patient/call")
+def call_nurse(request: Request):
+    patient_id = request.session.get("patient_id")
+    if not patient_id:
+        return RedirectResponse("/patient/login", status_code=303)
+    with open_database(database_path()) as connection:
+        patient = connection.execute(
+            "SELECT id, display_name FROM patient WHERE id = ? AND active = 1", (patient_id,)
+        ).fetchone()
+        if patient is None:
+            request.session.clear()
+            return RedirectResponse("/patient/login", status_code=303)
+        existing = connection.execute(
+            """SELECT 1 FROM entry WHERE patient_id = ? AND type = 'concern'
+               AND title = 'Patient requested a nurse' AND status = 'open' LIMIT 1""",
+            (patient_id,),
+        ).fetchone()
+        if not existing:
+            connection.execute(
+                """INSERT INTO entry (patient_id, type, title, details, severity, status, author)
+                   VALUES (?, 'concern', 'Patient requested a nurse', 'Requested from the patient demo page.', 'high', 'open', ?)""",
+                (patient_id, patient["display_name"]),
+            )
+    request.session["call_video"] = True
+    request.session["open_video"] = True
+    return RedirectResponse("/patient", status_code=303)
+
+
 @app.post("/logout")
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+
+
+@app.post("/patient/logout")
+def patient_logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/patient/login", status_code=303)
 
 
 @app.get("/", response_class=HTMLResponse)

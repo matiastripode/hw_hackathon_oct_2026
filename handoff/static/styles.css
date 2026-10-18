@@ -183,6 +183,8 @@ main > section { margin-bottom: 2rem; }
 }
 .landing .primary-button:hover { background: #8f3e30; }
 .landing .primary-button:disabled { background: #a7b9b0; }
+.patient-switch { margin: 1.5rem 0 0; color: var(--muted); font-size: 13px; }
+.patient-switch a { color: var(--forest); font-weight: 700; }
 .landing-footer {
   display: flex; justify-content: space-between; gap: 20px;
   padding-block: 32px 46px; border-top: 1px solid #d3d8d0;
@@ -209,3 +211,50 @@ main > section { margin-bottom: 2rem; }
 @media (prefers-reduced-motion: reduce) {
   .landing-intro, .landing .login-card { animation: none; }
 }
+
+.patient-page {
+  --patient-green: #184e48;
+  background: radial-gradient(circle at 75% 10%, #e1efe5 0, transparent 28rem),
+    repeating-linear-gradient(110deg, transparent 0 62px, #dfdfd248 63px, transparent 64px),
+    #f1eee6;
+}
+.patient-page header { padding: 1.2rem 0; }
+.patient-page .brand { margin: 0; }
+.patient-main { max-width: 700px; padding-top: clamp(3rem, 8vw, 6rem); }
+.patient-main > .eyebrow { color: #2c7569; }
+.patient-main h1 { color: #1b3432; }
+.patient-lead { margin: 1rem 0 2.4rem; color: #52655d; font-size: 1.2rem; }
+.call-card {
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border: 1px solid #d9dfd6; border-radius: 16px;
+  background: #fffdf8; box-shadow: 0 20px 65px #3b514020;
+}
+.call-icon {
+  display: inline-grid; place-items: center; width: 3rem; height: 3rem;
+  border-radius: 50%; background: #e4f3ed; color: var(--patient-green);
+  font-size: 2rem; font-weight: 700; line-height: 1;
+}
+.call-card h2 { margin: 1rem 0 .5rem; color: #1b3432; font-size: clamp(1.5rem, 4vw, 2rem); }
+.call-card p { color: #52655d; }
+.call-card .primary-button { min-height: 4rem; font-size: 1.1rem; }
+.call-card .primary-button span { margin-left: .5rem; }
+.theater-dialog {
+  width: min(920px, calc(100% - 2rem)); max-height: min(90vh, 90dvh);
+  padding: clamp(1.25rem, 4vw, 2rem); border: 1px solid #4e7770; border-radius: 18px;
+  background: #142c29; color: #f7f9ed; box-shadow: 0 28px 100px #071b18a6;
+}
+.theater-dialog::backdrop { background: #061b19de; }
+.theater-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.theater-heading .eyebrow { color: #bee9dc; }
+.theater-heading h2 { margin: 0; font-size: clamp(1.4rem, 4vw, 2.3rem); }
+.theater-close {
+  flex: none; padding: .5rem .8rem; border: 1px solid #b9dbd0; border-radius: 8px;
+  background: transparent; color: white; cursor: pointer; font: inherit;
+}
+.theater-close span { margin-left: .3rem; font-size: 1.3rem; line-height: 1; }
+.theater-close:hover { background: #2a6960; }
+.theater-close:focus-visible { outline: 3px solid #d69b38; outline-offset: 3px; }
+.theater-dialog .theater-note { margin-bottom: 0; color: #d7ebe5; }
+.theater-note a { color: #bee9dc; font-weight: 700; }
+.video-embed { max-width: 560px; margin: 1.5rem auto; overflow-wrap: anywhere; }
+.video-embed .twitter-tweet { margin-inline: auto; }

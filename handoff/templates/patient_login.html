@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient sign in · Caregiver Handoff Board</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/logo.svg') }}">
+</head>
+<body class="landing">
+  <div class="disclaimer" role="note">Prototype · fictional data only · not medical advice</div>
+  <header class="landing-header">
+    <div class="landing-wrap">
+      <a class="brand" href="/patient/login" aria-label="Caregiver Handoff Board patient home">
+        <img src="{{ url_for('static', path='/logo.svg') }}" alt="" width="48" height="48">
+        <span class="brand-name">Caregiver<strong>Handoff Board</strong></span>
+      </a>
+      <span class="landing-caption">THE OFFLINE CARE BOARD</span>
+    </div>
+  </header>
+  <main class="landing-wrap landing-layout">
+    <section class="landing-intro" aria-labelledby="patient-landing-title">
+      <span class="landing-eyebrow">PATIENT ACCESS / DEMO</span>
+      <h1 id="patient-landing-title">Help is just<br><i>one tap away.</i></h1>
+      <p>A simple place to ask your care team to check in.</p>
+      <div class="landing-rule"></div>
+      <p class="landing-small-note">This is a fictional demo, not an emergency service or a real nurse pager.</p>
+    </section>
+    <section class="login-card" aria-labelledby="patient-login-title">
+      <div class="landing-card-topline"><span>PATIENT ACCESS</span><span>DEMO MODE</span></div>
+      <h2 id="patient-login-title">Welcome back.</h2>
+      <p class="demo-note">Choose your fictional patient profile to continue.</p>
+      <p class="landing-login-note">Demo login — no real authentication. Never enter real patient information.</p>
+      {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+      <form action="/patient/login" method="post">
+        <label for="patient-id">Patient</label>
+        <select id="patient-id" name="patient_id" required>
+          <option value="">Choose a patient</option>
+          {% for patient in patients %}
+          <option value="{{ patient['id'] }}" {% if selected_patient == patient['id'] | string %}selected{% endif %}>{{ patient["display_name"] }} · #{{ patient["id"] }}</option>
+          {% endfor %}
+        </select>
+        <label for="password">Demo password <span class="landing-field-hint">(at least 6 characters)</span></label>
+        <input id="password" name="password" type="password" minlength="6" required autocomplete="off" placeholder="At least 6 characters">
+        <p class="field-hint">Any password of at least 6 characters works. It is never stored.</p>
+        <button class="primary-button" type="submit">Open patient page <span aria-hidden="true">&rarr;</span></button>
+      </form>
+      <p class="patient-switch">On the care team? <a href="/login">Caregiver sign in</a></p>
+    </section>
+  </main>
+  <footer class="landing-wrap landing-footer">
+    <span>Caregiver Handoff Board / Offline demo</span>
+    <span>Private, local-first prototype. Never enter real patient information.</span>
+  </footer>
+</body>
+</html>
