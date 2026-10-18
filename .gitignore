@@ -1,0 +1,30 @@
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Build and generated output
+build/
+dist/
+out/
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
