@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline Caregiver Handoff Board — Plan</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--ink:#1f2937;--muted:#6b7280;--accent:#0f766e;--accent-soft:#ccfbf1;--warn:#b45309;--warn-soft:#fef3c7;--bad:#b91c1c;--bad-soft:#fee2e2;--line:#e5e7eb}
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  .banner{background:var(--warn-soft);color:var(--warn);text-align:center;padding:.5rem 1rem;font-weight:600;font-size:.9rem;border-bottom:1px solid #fde68a}
+  header{background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;padding:2.5rem 1.25rem 2rem}
+  header .wrap{max-width:960px;margin:auto}
+  header h1{margin:0 0 .4rem;font-size:2rem;line-height:1.2}
+  header p{margin:0;opacity:.9;max-width:720px}
+  .pills{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.25rem}
+  .pill{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);padding:.25rem .75rem;border-radius:999px;font-size:.85rem}
+  nav{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:10}
+  nav .wrap{max-width:960px;margin:auto;display:flex;gap:1rem;overflow-x:auto;padding:.6rem 1.25rem;white-space:nowrap}
+  nav a{color:var(--muted);text-decoration:none;font-size:.9rem;font-weight:500}
+  nav a:hover{color:var(--accent)}
+  main{max-width:960px;margin:auto;padding:1.5rem 1.25rem 4rem}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.5rem 1.5rem 1.25rem;margin-bottom:1.25rem;scroll-margin-top:60px}
+  h2{margin:0 0 1rem;font-size:1.35rem;display:flex;align-items:center;gap:.6rem}
+  h2 .num{background:var(--accent-soft);color:var(--accent);width:1.9rem;height:1.9rem;border-radius:50%;display:inline-grid;place-items:center;font-size:.95rem}
+  h3{margin:1.25rem 0 .5rem;font-size:1.05rem}
+  ul{padding-left:1.2rem;margin:.25rem 0 .75rem}
+  li{margin:.2rem 0}
+  code{background:#f3f4f6;padding:.1rem .35rem;border-radius:4px;font-size:.88em}
+  .grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .box{border:1px solid var(--line);border-radius:10px;padding:1rem}
+  .box.good{background:#f0fdfa;border-color:#99f6e4}
+  .box.no{background:#fef2f2;border-color:#fecaca}
+  .box h3{margin-top:0}
+  .flow{list-style:none;padding:0;counter-reset:s;display:grid;gap:.6rem}
+  .flow li{counter-increment:s;display:flex;gap:.75rem;align-items:flex-start;background:#f9fafb;border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;margin:0}
+  .flow li::before{content:counter(s);flex:none;background:var(--accent);color:#fff;width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem}
+  .feature{border-left:4px solid var(--accent);padding:.25rem 0 .25rem 1rem;margin:1rem 0}
+  .feature h3{margin:.2rem 0 .4rem}
+  .tag{display:inline-block;font-size:.75rem;font-weight:600;padding:.1rem .5rem;border-radius:6px;background:var(--accent-soft);color:var(--accent);vertical-align:middle;margin-left:.4rem}
+  .tag.hw{background:#ede9fe;color:#6d28d9}
+  table{width:100%;border-collapse:collapse;font-size:.95rem}
+  th,td{text-align:left;padding:.6rem .7rem;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f9fafb;font-weight:600}
+  .scenario{background:#f9fafb;border-radius:10px;padding:1rem 1.1rem;border:1px solid var(--line)}
+  .handoff-card{margin-top:1rem;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .handoff-card .hd{background:#111827;color:#fff;padding:.6rem 1rem;font-weight:600;display:flex;justify-content:space-between;font-size:.9rem}
+  .handoff-card .row{display:flex;gap:.75rem;padding:.65rem 1rem;border-top:1px solid var(--line);align-items:center}
+  .dot{flex:none;width:.7rem;height:.7rem;border-radius:50%}
+  .ok{background:#10b981}.attn{background:#f59e0b}.crit{background:#ef4444}
+  .checks{list-style:none;padding:0}
+  .checks li{padding-left:1.7rem;position:relative}
+  .checks li::before{content:"✓";position:absolute;left:0;color:var(--accent);font-weight:700}
+  footer{text-align:center;color:var(--muted);font-size:.85rem;padding:1rem}
+</style>
+</head>
+<body>
+
+<div class="banner">Prototype · fictional data only · not medical advice</div>
+
+<header>
+  <div class="wrap">
+    <h1>Offline Caregiver Handoff Board</h1>
+    <p>A private, local-first web app hosted on a Raspberry Pi that helps one caregiver hand off medications, symptoms, appointments, tasks, and concerns to the next — with zero internet.</p>
+    <div class="pills">
+      <span class="pill">Status: Planned (revised)</span>
+      <span class="pill">Devin's Inferno — Devin × Miami Hardware Meetup</span>
+      <span class="pill">Raspberry Pi 4 · self-hosted Wi‑Fi</span>
+    </div>
+  </div>
+</header>
+
+<nav><div class="wrap">
+  <a href="#summary">Summary</a><a href="#goals">Goals</a><a href="#features">Features</a><a href="#data">Data model</a><a href="#arch">Architecture</a><a href="#demo">Demo</a><a href="#success">Success</a><a href="#build">Build plan</a><a href="#risks">Risks</a>
+</div></nav>
+
+<main>
+
+<section id="summary">
+  <h2><span class="num">1</span>Executive summary</h2>
+  <p>The Pi broadcasts its own Wi‑Fi network. Caregivers join from phones, tablets, or laptops via a printed QR code, sign in on a dummy login screen, record care updates, and submit a shift handoff that the next caregiver acknowledges. A small physical indicator makes the Pi part of the product, not just a server.</p>
+  <h3>Core workflow</h3>
+  <ol class="flow">
+    <li>Caregiver signs in (dummy login) and opens the patient dashboard.</li>
+    <li>They record a medication, symptom, task, appointment, or concern.</li>
+    <li>They submit a handoff with a free‑text note.</li>
+    <li>Next caregiver signs in on another device and sees what changed, what's complete, and what still needs attention.</li>
+    <li>Next caregiver acknowledges the handoff; the physical indicator clears.</li>
+  </ol>
+</section>
+
+<section id="goals">
+  <h2><span class="num">2</span>Product goals</h2>
+  <div class="grid">
+    <div class="box good">
+      <h3>Goals</h3>
+      <ul>
+        <li>Handoffs readable in under 30 seconds</li>
+        <li>Unresolved concerns surfaced without searching</li>
+        <li>Multiple devices at once, near‑live updates</li>
+        <li>No internet, no external APIs, no CDN assets</li>
+        <li>Meaningful use of Pi hosting <em>and</em> hardware</li>
+        <li>Buildable and demoable during the hackathon</li>
+      </ul>
+    </div>
+    <div class="box no">
+      <h3>Out of scope</h3>
+      <ul>
+        <li>Diagnosis or clinical recommendations</li>
+        <li>Real patient data / PHI</li>
+        <li>Cloud sync</li>
+        <li>SMS, email, push, external integrations</li>
+        <li>Billing, payments, insurance</li>
+        <li>Real authentication (login is a dummy)</li>
+        <li>Complex permissions / multi‑org admin</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <h2><span class="num">3</span>Features (MVP)</h2>
+
+  <div class="feature">
+    <h3>Dummy login screen <span class="tag">New</span></h3>
+    <ul>
+      <li>Shown on first visit and after sign‑out.</li>
+      <li>Pick a seeded caregiver (Maria, Alex) or type a display name; password field accepts anything.</li>
+      <li>Session cookie stores the name, used as <code>author</code> on entries and handoffs.</li>
+      <li>Labeled "Demo login — no real authentication."</li>
+      <li>Sign‑out in header to switch caregivers on one device.</li>
+    </ul>
+  </div>
+
+  <div class="feature">
+    <h3>Patient dashboard</h3>
+    <ul>
+      <li>Patient header (fictional: James, age, key notes).</li>
+      <li>Open items grouped by type, sorted by severity; unresolved concerns pinned on top.</li>
+      <li>Quick‑add form: type, title, details, severity, status.</li>
+      <li>Live refresh via Server‑Sent Events (fallback: poll every 5 s).</li>
+    </ul>
+  </div>
+
+  <div class="feature">
+    <h3>Handoff</h3>
+    <ul>
+      <li>"Submit handoff" → note + snapshot of changes since the last acknowledged handoff.</li>
+      <li>Summary: Completed · Changed · Still needs attention · Note + author + timestamp.</li>
+      <li>"Acknowledge handoff" closes the shift boundary.</li>
+    </ul>
+  </div>
+
+  <div class="feature">
+    <h3>Physical indicator <span class="tag hw">Hardware</span></h3>
+    <p>Pick based on parts available, in priority order:</p>
+    <ol>
+      <li><strong>LED</strong> on GPIO — on while a handoff is unacknowledged or a high‑severity concern is open.</li>
+      <li><strong>Button</strong> on GPIO — acknowledges the latest handoff.</li>
+      <li><strong>e‑ink / LCD</strong> — open‑concern count and last handoff time.</li>
+    </ol>
+    <p>Hardware code sits behind a small interface with a no‑op fallback so the app also runs on a laptop.</p>
+  </div>
+
+  <div class="feature">
+    <h3>Always‑visible disclaimer</h3>
+    <p>"Prototype — fictional data only — not medical advice."</p>
+  </div>
+</section>
+
+<section id="data">
+  <h2><span class="num">4</span>Data model</h2>
+  <p>One unified <code>entry</code> table instead of five separate features.</p>
+  <table>
+    <tr><th>Table</th><th>Fields</th></tr>
+    <tr><td><code>caregiver</code></td><td>id, name</td></tr>
+    <tr><td><code>entry</code></td><td>id, type (<code>medication</code> | <code>symptom</code> | <code>task</code> | <code>appointment</code> | <code>concern</code>), title, details, severity (<code>low</code> | <code>medium</code> | <code>high</code>), status (<code>open</code> | <code>done</code>), value, previous_value, author, created_at, updated_at</td></tr>
+    <tr><td><code>handoff</code></td><td>id, author, note, submitted_at, acknowledged_by, acknowledged_at</td></tr>
+  </table>
+  <ul style="margin-top:1rem">
+    <li><code>previous_value</code> enables trends like "Dizziness: mild → moderate".</li>
+    <li><strong>"Changed"</strong> = entries created/updated after the last acknowledged handoff's <code>acknowledged_at</code>.</li>
+  </ul>
+</section>
+
+<section id="arch">
+  <h2><span class="num">5</span>Architecture</h2>
+  <div class="grid">
+    <div class="box"><h3>App</h3><ul><li>Single process: FastAPI (or Express)</li><li>SQLite in WAL mode</li><li>Server‑rendered HTML + htmx</li><li>All JS/CSS/fonts bundled locally</li><li>SSE for live updates</li><li>systemd auto‑start on boot</li></ul></div>
+    <div class="box"><h3>Network</h3><ul><li>Pi runs its own Wi‑Fi hotspot (NetworkManager)</li><li>Reachable at <code>http://handoff.local</code> + fixed IP fallback</li><li>Printed QR codes: Wi‑Fi join + URL</li></ul></div>
+    <div class="box"><h3>Time</h3><ul><li>Pi has no RTC and no NTP offline</li><li>Preferred: DS3231 RTC HAT</li><li>Fallback: adopt first client's browser time on boot (<code>/api/clock-sync</code>)</li></ul></div>
+  </div>
+</section>
+
+<section id="demo">
+  <h2><span class="num">6</span>Primary demo scenario</h2>
+  <div class="scenario">
+    <p><strong>Evening shift.</strong> Maria signs in on her phone while caring for her father, James. She records his 8:00 PM medication as taken, updates dizziness from mild to moderate, marks tomorrow's cardiology appointment as needing transportation confirmation, and submits a handoff note. <strong>The LED turns on.</strong></p>
+    <p><strong>Morning shift.</strong> The morning caregiver signs in from a laptop and immediately sees:</p>
+  </div>
+  <div class="handoff-card">
+    <div class="hd"><span>Handoff from Maria</span><span>8:42 PM</span></div>
+    <div class="row"><span class="dot ok"></span>8:00 PM medication — completed</div>
+    <div class="row"><span class="dot crit"></span>Dizziness — mild → moderate (unresolved)</div>
+    <div class="row"><span class="dot attn"></span>Cardiology appt tomorrow — transportation needs confirmation</div>
+    <div class="row"><span class="dot" style="background:#9ca3af"></span><em>"Dad was a bit unsteady after dinner. Please check in on dizziness first thing."</em></div>
+  </div>
+  <p style="margin-top:1rem">They acknowledge the handoff (on screen or via the physical button). <strong>The LED turns off.</strong> Everything happens on the Pi's own network with the internet disconnected.</p>
+</section>
+
+<section id="success">
+  <h2><span class="num">7</span>Success criteria</h2>
+  <ul class="checks">
+    <li>3‑minute demo across 2 devices runs end to end with no internet</li>
+    <li>Handoff summary readable in under 30 seconds</li>
+    <li>Second device reflects changes within ~5 s without manual refresh</li>
+    <li>Timestamps correct on an offline boot</li>
+    <li>One‑command seed/reset restores the fictional demo state</li>
+  </ul>
+</section>
+
+<section id="build">
+  <h2><span class="num">8</span>Build plan</h2>
+  <ol class="flow">
+    <li>Scaffold app, SQLite schema, seed/reset script, disclaimer banner</li>
+    <li>Dummy login + session cookie + sign‑out</li>
+    <li>Dashboard + quick‑add entry + status/severity updates</li>
+    <li>Handoff submit / summary / acknowledge</li>
+    <li>SSE live updates</li>
+    <li>Pi setup: hotspot, mDNS, systemd, clock strategy</li>
+    <li>GPIO indicator (LED → button → display as time allows)</li>
+    <li>Rehearse demo offline; print QR codes</li>
+  </ol>
+</section>
+
+<section id="risks">
+  <h2><span class="num">9</span>Risks &amp; mitigations</h2>
+  <table>
+    <tr><th>Risk</th><th>Mitigation</th></tr>
+    <tr><td>Pi clock wrong offline</td><td>RTC HAT or browser clock sync on boot</td></tr>
+    <tr><td>Venue Wi‑Fi unreliable</td><td>Pi hosts its own hotspot</td></tr>
+    <tr><td>Hidden internet dependencies</td><td>Bundle all assets; rehearse with internet unplugged</td></tr>
+    <tr><td>SD card corruption on power loss</td><td>SQLite WAL, clean shutdown, backup SD image</td></tr>
+    <tr><td>Hardware part failure</td><td>No‑op fallback; on‑screen acknowledge still works</td></tr>
+    <tr><td>Demo data drift during rehearsal</td><td>One‑command reset script</td></tr>
+  </table>
+</section>
+
+</main>
+<footer>Offline Caregiver Handoff Board · Hackathon plan · Fictional data only</footer>
+</body>
+</html>
